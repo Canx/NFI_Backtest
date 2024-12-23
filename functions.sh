@@ -105,7 +105,20 @@ select_nfi_version() {
   echo "Repository is now on version: $(git -C "$REPO_PATH" rev-parse --short HEAD)"
 }
 
+# Function to get the current repository version
+get_repo_version() {
+  local branch=$(git -C "$REPO_PATH" rev-parse --abbrev-ref HEAD)
+  local tag=$(git -C "$REPO_PATH" describe --tags --exact-match 2>/dev/null)
+  local commit=$(git -C "$REPO_PATH" rev-parse --short HEAD)
 
+  if [ -n "$tag" ]; then
+    echo "$tag"
+  elif [ "$branch" == "HEAD" ]; then
+    echo "$commit"
+  else
+    echo "$branch"
+  fi
+}
 
 
 # Ensure user_data directory exists and setup symbolic link for strategy
@@ -218,50 +231,119 @@ download_data() {
   echo "Data download and validation completed successfully."
 }
 
-# Perform backtesting based on user choice
-run_backtest() {
-  TIMERANGE=${1:-$DEFAULT_TIMERANGE}
-  local timestamp=$(date +"%Y%m%d_%H%M%S")
+# Function for default backtest
+run_default_backtest() {
+  local timerange=$1
   local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+  local results_file="$results_dir/default_${repo_version}_${timerange}_${timestamp}.json"
 
   # Ensure results directory exists
   mkdir -p "$results_dir"
 
+  echo "Running default backtest..."
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+    --timerange "$timerange" \
+    --export trades --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
+  echo "Results saved to $results_file"
+}
+
+# Function for backtest without derisk
+run_noderisk_backtest() {
+  local timerange=$1
+  local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+  local results_file="$results_dir/noderisk_${repo_version}_${timerange}_${timestamp}.json"
+
+  # Ensure results directory exists
+  mkdir -p "$results_dir"
+
+  echo "Running backtest without derisk..."
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+    -c "$DISABLE_DERISK_CONFIG" \
+    --timerange "$timerange" \
+    --export trades --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
+  echo "Results saved to $results_file"
+}
+
+# Function to test different max_open_trades values
+test_slots() {
+  local timerange=${1:-$DEFAULT_TIMERANGE}
+  local max_slots=10
+  local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+
+  # Ensure results directory exists
+  mkdir -p "$results_dir"
+
+  echo "Testing different values for max_open_trades (slots) (version: $repo_version)..."
+  for slots in $(seq 1 "$max_slots"); do
+    local slots_config=$(mktemp)
+    local results_file="$results_dir/results_slots_${slots}_${repo_version}_${timerange}_${timestamp}.json"
+
+    # Create temporary configuration for current slots
+    cat << EOF > "$slots_config"
+{
+  "max_open_trades": $slots
+}
+EOF
+
+    echo "Running backtest with $slots slots..."
+    freqtrade backtesting \
+      -c "$BACKTEST_CONFIG" \
+      -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+      -c "$slots_config" \
+      --timerange "$timerange" \
+      --export signals \
+      --export-filename "$results_file" \
+      --timeframe-detail 1m \
+      -v
+
+    echo "Backtesting with $slots slots completed. Results saved to $results_file."
+
+    # Clean up temporary configuration file
+    rm -f "$slots_config"
+  done
+
+  echo "Slot testing completed. Results saved in $results_dir."
+}
+
+
+# Perform backtesting based on user choice
+run_backtest() {
+  local timerange=${1:-$DEFAULT_TIMERANGE}
+
   echo "Choose the type of backtest to run:"
   echo "1) Default backtest"
   echo "2) Backtest without derisk"
-  read -rp "Enter your choice (1 or 2): " choice
+  echo "3) Test different max_open_trades (slots)"
+  read -rp "Enter your choice (1, 2, or 3): " choice
 
   case $choice in
     1)
-      local results_file="$results_dir/default_${TIMERANGE}_${timestamp}.json"
-      echo "Running default backtest..."
-      freqtrade backtesting \
-        -c "$BACKTEST_CONFIG" \
-        -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
-        --timerange "$TIMERANGE" \
-        --export trades --export signals \
-        --export-filename "$results_file" \
-        --timeframe-detail 1m \
-        -v
-      echo "Results saved to $results_file"
+      run_default_backtest "$timerange"
       ;;
     2)
-      local results_file="$results_dir/noderisk_${TIMERANGE}_${timestamp}.json"
-      echo "Running backtest without derisk..."
-      freqtrade backtesting \
-        -c "$BACKTEST_CONFIG" \
-        -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
-        -c "$DISABLE_DERISK_CONFIG" \
-        --timerange "$TIMERANGE" \
-        --export trades --export signals \
-        --export-filename "$results_file" \
-        --timeframe-detail 1m \
-        -v
-      echo "Results saved to $results_file"
+      run_noderisk_backtest "$timerange"
+      ;;
+    3)
+      test_slots "$timerange"
       ;;
     *)
-      echo "Invalid choice. Please select 1 or 2."
+      echo "Invalid choice. Please select 1, 2, or 3."
       ;;
   esac
 }
