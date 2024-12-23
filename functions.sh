@@ -46,9 +46,9 @@ configure_timerange() {
 # Save the timerange configuration to backtest.json
 save_timerange_config() {
   local timerange=$1
-  local config_file="$SCRIPT_DIR/backtest.json"
+  local config_file="$SCRIPT_DIR/backtest.json"  # O usa config.json
 
-  # Create or overwrite the backtest.json file with timerange configuration
+  # Create or overwrite the backtest.json file with the new timerange
   cat <<EOF > "$config_file"
 {
   "timerange": "$timerange"
@@ -58,9 +58,10 @@ EOF
   echo "Timerange configuration saved: $timerange"
 }
 
-# Load the timerange configuration from backtest.json
+
+# Load the timerange configuration from backtest.json or config.json
 load_timerange_config() {
-  local config_file="$SCRIPT_DIR/backtest.json"
+  local config_file="$SCRIPT_DIR/backtest.json"  # O usa config.json si prefieres
 
   # Check if the config file exists
   if [ -f "$config_file" ]; then
@@ -73,24 +74,25 @@ load_timerange_config() {
   fi
 }
 
+
 # Function to configure timerange, using saved configuration if available
 configure_timerange() {
   # Try to load the timerange from the saved configuration
   load_timerange_config
 
-  # If TIMERANGE is still empty, prompt the user for input
-  if [ -z "$TIMERANGE" ]; then
-    echo "Current TIMERANGE: $DEFAULT_TIMERANGE"
-    read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
-    TIMERANGE=${new_timerange:-$DEFAULT_TIMERANGE}
-  fi
+  # Always prompt the user to enter a new timerange, showing the last one as the default
+  echo "Current TIMERANGE: $TIMERANGE"
+  read -rp "Enter new TIMERANGE (or press Enter to keep current): " new_timerange
+  
+  # If the user doesn't enter anything, keep the last loaded timerange
+  TIMERANGE=${new_timerange:-$TIMERANGE}
 
   # Save the selected timerange to the config file for future use
   save_timerange_config "$TIMERANGE"
 
   echo "New TIMERANGE: $TIMERANGE"
   
-  # Continue with the rest of the process as before
+  # Proceed with the timerange download configuration
   local default_timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
   echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
   read -rp "Enter the number of days (default: 60): " days_before
@@ -102,6 +104,7 @@ configure_timerange() {
 
   echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
 }
+
 
 # Function to select a specific version of the NFI repository
 select_nfi_version() {
