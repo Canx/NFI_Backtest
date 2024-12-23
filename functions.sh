@@ -216,7 +216,9 @@ validate_feather_files() {
 
 download_data() {
   TIMERANGE_DOWNLOAD=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
-  local pairlist_config="pairlist.json"
+  
+  # Usar la variable global $PAIRLIST_FILE
+  local pairlist_config="$PAIRLIST_FILE"
 
   # Verificar disponibilidad de datos
   if check_data_availability "$TIMERANGE_DOWNLOAD"; then
@@ -237,6 +239,34 @@ download_data() {
 
   echo "Data download completed."
 }
+
+# Function to select the pairlist.json file interactively and set the global variable
+select_pairlist_file() {
+  PAIRLIST_DIR="$SCRIPT_DIR/pairlists"
+  DEFAULT_PAIRLIST="$PAIRLIST_DIR/default.json"
+  
+  # Check if the pairlists directory exists
+  if [ ! -d "$PAIRLIST_DIR" ]; then
+    echo "The pairlists directory does not exist."
+    exit 1
+  fi
+
+  # List all JSON files in the pairlists directory
+  echo "Select a pairlist file from the '$PAIRLIST_DIR' folder:"
+  select pairlist_file in "$PAIRLIST_DIR"/*.json; do
+    if [ -z "$pairlist_file" ]; then
+      echo "No file selected, using the default file."
+      pairlist_file="$DEFAULT_PAIRLIST"
+    fi
+    echo "Using the pairlist file: $pairlist_file"
+    break
+  done
+
+  # Assign the selected file to the global variable PAIRLIST_FILE
+  PAIRLIST_FILE="$pairlist_file"
+}
+
+
 
 
 extract_pairs() {
@@ -461,12 +491,15 @@ run_custom_signals_backtest() {
   fi
 }
 
-
-
+#################
+# Backtest menu #
+#################
 
 run_backtest() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
-  local pairlist_config="pairlist.json"
+  
+  # Usar la variable global $PAIRLIST_FILE
+  local pairlist_config="$PAIRLIST_FILE"
 
   echo "Choose the type of backtest to run:"
   echo "1) Default backtest (default)"
@@ -503,9 +536,6 @@ run_backtest() {
       ;;
   esac
 }
-
-
-
 
 
 # Clean up temporary files

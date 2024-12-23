@@ -17,6 +17,7 @@ USER_DATA_DIR="$SCRIPT_DIR/$USER_DATA_DIR"
 source "$SCRIPT_DIR/functions.sh"
 
 main() {
+  select_pairlist_file
   ensure_repo
   ensure_user_data
   generate_temp_configs
