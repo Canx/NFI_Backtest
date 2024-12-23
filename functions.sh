@@ -12,17 +12,25 @@ ensure_repo() {
   fi
 }
 
-# Function to configure timerange
+# Function to configure timerange, using saved configuration if available
 configure_timerange() {
-  local default_timerange=${1:-$DEFAULT_TIMERANGE}
-  local default_timerange_download=${2:-$DEFAULT_TIMERANGE_DOWNLOAD}
+  # Try to load the timerange from the saved configuration
+  load_timerange_config
 
-  echo "Current TIMERANGE: $default_timerange"
-  read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
+  # If TIMERANGE is still empty, prompt the user for input
+  if [ -z "$TIMERANGE" ]; then
+    echo "Current TIMERANGE: $DEFAULT_TIMERANGE"
+    read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
+    TIMERANGE=${new_timerange:-$DEFAULT_TIMERANGE}
+  fi
 
-  # If the user enters a new timerange, use it; otherwise, keep the default
-  TIMERANGE=${new_timerange:-$default_timerange}
+  # Save the selected timerange to the config file for future use
+  save_timerange_config "$TIMERANGE"
 
+  echo "New TIMERANGE: $TIMERANGE"
+  
+  # Continue with the rest of the process as before
+  local default_timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
   echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
   read -rp "Enter the number of days (default: 60): " days_before
   days_before=${days_before:-60}
@@ -31,7 +39,67 @@ configure_timerange() {
   TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
   TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_START
 
+  echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
+}
+
+
+# Save the timerange configuration to backtest.json
+save_timerange_config() {
+  local timerange=$1
+  local config_file="$SCRIPT_DIR/backtest.json"
+
+  # Create or overwrite the backtest.json file with timerange configuration
+  cat <<EOF > "$config_file"
+{
+  "timerange": "$timerange"
+}
+EOF
+
+  echo "Timerange configuration saved: $timerange"
+}
+
+# Load the timerange configuration from backtest.json
+load_timerange_config() {
+  local config_file="$SCRIPT_DIR/backtest.json"
+
+  # Check if the config file exists
+  if [ -f "$config_file" ]; then
+    # Read the timerange value from the JSON file
+    TIMERANGE=$(jq -r '.timerange' "$config_file")
+    echo "Loaded timerange from config: $TIMERANGE"
+  else
+    echo "No previous timerange configuration found. Using default."
+    TIMERANGE="$DEFAULT_TIMERANGE"
+  fi
+}
+
+# Function to configure timerange, using saved configuration if available
+configure_timerange() {
+  # Try to load the timerange from the saved configuration
+  load_timerange_config
+
+  # If TIMERANGE is still empty, prompt the user for input
+  if [ -z "$TIMERANGE" ]; then
+    echo "Current TIMERANGE: $DEFAULT_TIMERANGE"
+    read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
+    TIMERANGE=${new_timerange:-$DEFAULT_TIMERANGE}
+  fi
+
+  # Save the selected timerange to the config file for future use
+  save_timerange_config "$TIMERANGE"
+
   echo "New TIMERANGE: $TIMERANGE"
+  
+  # Continue with the rest of the process as before
+  local default_timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
+  echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
+  read -rp "Enter the number of days (default: 60): " days_before
+  days_before=${days_before:-60}
+
+  # Calculate TIMERANGE_DOWNLOAD
+  TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
+  TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_START
+
   echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
 }
 
