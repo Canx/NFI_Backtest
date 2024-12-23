@@ -1,12 +1,12 @@
 # Backtesting Automation for NostalgiaForInfinity
 
-This project provides an automated solution to run backtests for the **NostalgiaForInfinity** trading strategy using the `freqtrade` framework. The main script, `backtest.sh`, allows users to test different configurations and scenarios easily.
+This project provides an automated solution to perform backtests for the **NostalgiaForInfinity** trading strategy using the `freqtrade` framework. The main script, `backtest.sh`, allows users to test different configurations and scenarios easily.
 
 ## Requirements
 
 ### Prerequisites
 
-Ensure that the following tools are installed:
+Ensure the following tools are installed:
 
 1. **Python**: Version 3.9 or later is required.
    - Install using [pyenv](https://github.com/pyenv/pyenv) or your system's package manager.
@@ -21,6 +21,12 @@ Ensure that the following tools are installed:
      sudo apt install git # For Ubuntu/Debian
      brew install git     # For macOS
      ```
+4. **jq**:
+   - Required for handling JSON configurations in the scripts.
+     ```bash
+     sudo apt install jq # For Ubuntu/Debian
+     brew install jq     # For macOS
+     ```
 
 ### Additional Requirements
 
@@ -29,7 +35,7 @@ Ensure that the following tools are installed:
 - **User Data Directory**:
   The script creates and manages a `user_data` directory for storing backtest configurations and results.
 - **Pairlist Configuration**:
-  Place a file named `pairlist.json` in the root directory (next to `backtest.sh`).
+  Place a JSON pairlist configuration file in the `pairlists` folder within the project directory.
 
 ## Usage
 
@@ -42,14 +48,14 @@ cd NFI_Backtest
 ```
 
 ### Step 2: Configure the script
-The `backtest.sh` script is pre-configured with default values for:
+The `backtest.sh` script is preconfigured with default values for:
 
 - **Exchange**: `binance`
 - **Timerange**: `20241201-20241220`
-- **Timerange for Data Download**: Two months before the backtest timerange.
-- **Pairlist Configuration**: Ensure `pairlist.json` is present in the root directory.
+- **Timerange for Data Download**: Two months prior to the backtest range.
+- **Pairlist Configuration**: Selected interactively from the `pairlists` folder.
 
-You can modify these values in the script or dynamically set them during execution.
+You can modify these values directly in the script or set them dynamically during execution.
 
 ### Step 3: Run the script
 Execute the backtest script:
@@ -60,16 +66,16 @@ Execute the backtest script:
 
 ### Features
 
-The script provides the following options:
+The script offers the following options:
 
 1. **Default Backtest**:
    Runs the strategy with default settings.
 2. **Backtest Without Derisk**:
    Disables specific risk mitigation parameters.
 3. **Test Slots (max_open_trades)**:
-   Tests the strategy with varying numbers of `max_open_trades` and outputs results for analysis.
-4. **Backtest with custom disabled signals**:
-   Allows you to disable specific long entry signals interactively.
+   Allows testing the strategy with different numbers of maximum open trades.
+4. **Backtest with Custom Disabled Signals**:
+   Interactively disables specific long entry signals.
 
 ### Results
 
@@ -94,9 +100,13 @@ To analyze backtest results, use `freqtrade backtesting-analysis`. For example:
 freqtrade backtesting-analysis --export-filename /path/to/results.json
 ```
 
+### Freqtrade Webserver (Pending Task)
+
+The functionality to run the freqtrade webserver after backtests and visualize signals is planned for future development.
+
 ## Contributing
 
-Feel free to open issues or submit pull requests to enhance the functionality of this project.
+If you want to enhance this project, feel free to open an issue or submit a pull request.
 
 ## License
 
