@@ -12,6 +12,30 @@ ensure_repo() {
   fi
 }
 
+# Function to configure timerange
+configure_timerange() {
+  local default_timerange=${1:-$DEFAULT_TIMERANGE}
+  local default_timerange_download=${2:-$DEFAULT_TIMERANGE_DOWNLOAD}
+
+  echo "Current TIMERANGE: $default_timerange"
+  read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
+
+  # If the user enters a new timerange, use it; otherwise, keep the default
+  TIMERANGE=${new_timerange:-$default_timerange}
+
+  echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
+  read -rp "Enter the number of days (default: 60): " days_before
+  days_before=${days_before:-60}
+
+  # Calculate TIMERANGE_DOWNLOAD
+  TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
+  TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_START
+
+  echo "New TIMERANGE: $TIMERANGE"
+  echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
+}
+
+
 # Ensure user_data directory exists and setup symbolic link for strategy
 ensure_user_data() {
   if [ ! -d "$USER_DATA_DIR" ]; then
@@ -122,27 +146,43 @@ download_data() {
   echo "Data download and validation completed successfully."
 }
 
-
-# Perform backtesting
+# Perform backtesting based on user choice
 run_backtest() {
   TIMERANGE=${1:-$DEFAULT_TIMERANGE}
 
-  freqtrade backtesting \
-    -c "$BACKTEST_CONFIG" \
-    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
-    --timerange "$TIMERANGE" \
-    --export trades \
-    --timeframe-detail 1m \
-    -v
+  echo "Choose the type of backtest to run:"
+  echo "1) Default backtest"
+  echo "2) Backtest without derisk"
+  read -rp "Enter your choice (1 or 2): " choice
 
-  freqtrade backtesting \
-    -c "$BACKTEST_CONFIG" \
-    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
-    -c "$DISABLE_DERISK_CONFIG" \
-    --timerange "$TIMERANGE" \
-    --export trades \
-    --timeframe-detail 1m
+  case $choice in
+    1)
+      echo "Running default backtest..."
+      freqtrade backtesting \
+        -c "$BACKTEST_CONFIG" \
+        -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+        --timerange "$TIMERANGE" \
+        --export trades \
+        --timeframe-detail 1m \
+        -v
+      ;;
+    2)
+      echo "Running backtest without derisk..."
+      freqtrade backtesting \
+        -c "$BACKTEST_CONFIG" \
+        -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+        -c "$DISABLE_DERISK_CONFIG" \
+        --timerange "$TIMERANGE" \
+        --export trades \
+        --timeframe-detail 1m \
+        -v
+      ;;
+    *)
+      echo "Invalid choice. Please select 1 or 2."
+      ;;
+  esac
 }
+
 
 # Clean up temporary files
 cleanup_temp_configs() {
