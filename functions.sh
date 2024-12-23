@@ -239,31 +239,6 @@ download_data() {
 }
 
 
-
-
-# Function for default backtest
-run_default_backtest() {
-  local timerange=$1
-  local results_dir="$USER_DATA_DIR/backtest_results"
-  local timestamp=$(date +"%Y%m%d_%H%M%S")
-  local repo_version=$(get_repo_version)
-  local results_file="$results_dir/default_${repo_version}_${timerange}_${timestamp}.json"
-
-  # Ensure results directory exists
-  mkdir -p "$results_dir"
-
-  echo "Running default backtest..."
-  freqtrade backtesting \
-    -c "$BACKTEST_CONFIG" \
-    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
-    --timerange "$timerange" \
-    --export trades --export signals \
-    --export-filename "$results_file" \
-    --timeframe-detail 1m \
-    -v
-  echo "Results saved to $results_file"
-}
-
 extract_pairs() {
   local json_file=$1
 
@@ -306,12 +281,36 @@ check_data_availability() {
   fi
 }
 
+######################
+# Backtest functions #
+######################
+
+run_default_backtest() {
+  local timerange=$1
+  local pairlist_config=$2
+  local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+  local results_file="$results_dir/default_${repo_version}_${timerange}_${timestamp}.json"
+
+  # Ensure results directory exists
+  mkdir -p "$results_dir"
+
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$pairlist_config" \
+    --timerange "$timerange" \
+    --export trades --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
+  echo "Results saved to $results_file"
+}
 
 
-
-# Function for backtest without derisk
 run_noderisk_backtest() {
   local timerange=$1
+  local pairlist_config=$2
   local results_dir="$USER_DATA_DIR/backtest_results"
   local timestamp=$(date +"%Y%m%d_%H%M%S")
   local repo_version=$(get_repo_version)
@@ -323,7 +322,7 @@ run_noderisk_backtest() {
   echo "Running backtest without derisk..."
   freqtrade backtesting \
     -c "$BACKTEST_CONFIG" \
-    -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+    -c "$pairlist_config" \
     -c "$DISABLE_DERISK_CONFIG" \
     --timerange "$timerange" \
     --export trades --export signals \
@@ -333,9 +332,10 @@ run_noderisk_backtest() {
   echo "Results saved to $results_file"
 }
 
-# Function to test different max_open_trades values
+
 test_slots() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
+  local pairlist_config=$2
   local max_slots=10
   local results_dir="$USER_DATA_DIR/backtest_results"
   local timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -359,7 +359,7 @@ EOF
     echo "Running backtest with $slots slots..."
     freqtrade backtesting \
       -c "$BACKTEST_CONFIG" \
-      -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
+      -c "$pairlist_config" \
       -c "$slots_config" \
       --timerange "$timerange" \
       --export signals \
@@ -376,10 +376,10 @@ EOF
   echo "Slot testing completed. Results saved in $results_dir."
 }
 
-
 # Perform backtesting based on user choice
 run_backtest() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
+  local pairlist_config="pairlist.json"
 
   echo "Choose the type of backtest to run:"
   echo "1) Default backtest (default)"
@@ -392,20 +392,24 @@ run_backtest() {
 
   case $choice in
     1)
-      run_default_backtest "$timerange"
+      echo "Running Default Backtest..."
+      run_default_backtest "$timerange" "$pairlist_config"
       ;;
     2)
-      run_noderisk_backtest "$timerange"
+      echo "Running Backtest without Derisk..."
+      run_noderisk_backtest "$timerange" "$pairlist_config"
       ;;
     3)
-      test_slots "$timerange"
+      echo "Testing different max_open_trades (slots)..."
+      test_slots "$timerange" "$pairlist_config"
       ;;
     *)
       echo "Invalid choice. Defaulting to Default backtest."
-      run_default_backtest "$timerange"
+      run_default_backtest "$timerange" "$pairlist_config"
       ;;
   esac
 }
+
 
 
 
