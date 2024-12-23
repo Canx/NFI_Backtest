@@ -216,20 +216,30 @@ validate_feather_files() {
 
 download_data() {
   TIMERANGE_DOWNLOAD=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
-  PAIRLIST_CONFIG="$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json"
+  local pairlist_config="pairlist.json"
 
-  echo "Downloading data for pairs in $PAIRLIST_CONFIG with timerange $TIMERANGE_DOWNLOAD..."
+  # Verificar disponibilidad de datos
+  if check_data_availability "$TIMERANGE_DOWNLOAD"; then
+    read -rp "Data is already available. Do you want to re-download it anyway? (y/N): " choice
+    if [[ ! $choice =~ ^[Yy]$ ]]; then
+      echo "Skipping data download."
+      return
+    fi
+  fi
+
+  echo "Downloading data for pairs in $pairlist_config with timerange $TIMERANGE_DOWNLOAD..."
   freqtrade download-data \
     --exchange "$EXCHANGE" \
     -t 1m 5m 15m 1h 4h 1d \
-    -c "$PAIRLIST_CONFIG" \
+    -c "$pairlist_config" \
     --timerange "$TIMERANGE_DOWNLOAD" \
     --prepend
 
-  echo "Validating downloaded data..."
-  validate_feather_files
-  echo "Data download and validation completed successfully."
+  echo "Data download completed."
 }
+
+
+
 
 # Function for default backtest
 run_default_backtest() {
@@ -253,6 +263,51 @@ run_default_backtest() {
     -v
   echo "Results saved to $results_file"
 }
+
+extract_pairs() {
+  local json_file=$1
+
+  # Extrae los pares usando Python
+  python3 - <<EOF
+import json
+import sys
+
+try:
+    with open("$json_file", "r") as file:
+        data = json.load(file)
+        pairs = data.get("exchange", {}).get("pair_whitelist", [])
+        if not pairs:
+            print("Error: 'pair_whitelist' is empty or not found in the JSON file.")
+            sys.exit(1)
+        for pair in pairs:
+            print(pair)
+except json.JSONDecodeError as e:
+    print(f"JSON validation error in {json_file}: {e}")
+    sys.exit(1)
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    sys.exit(1)
+EOF
+}
+
+check_data_availability() {
+  local timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
+  local data_dir="$USER_DATA_DIR/data/$EXCHANGE"
+
+  echo "Checking if data directory exists: $data_dir"
+
+  # Comprobar si el directorio de datos contiene archivos
+  if [ -d "$data_dir" ] && [ "$(ls -A "$data_dir")" ]; then
+    echo "Data directory is not empty. Assuming data is already downloaded."
+    return 0
+  else
+    echo "Data directory is empty or does not exist. Data needs to be downloaded."
+    return 1
+  fi
+}
+
+
+
 
 # Function for backtest without derisk
 run_noderisk_backtest() {
@@ -327,10 +382,13 @@ run_backtest() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
 
   echo "Choose the type of backtest to run:"
-  echo "1) Default backtest"
+  echo "1) Default backtest (default)"
   echo "2) Backtest without derisk"
   echo "3) Test different max_open_trades (slots)"
-  read -rp "Enter your choice (1, 2, or 3): " choice
+  read -rp "Enter your choice (1, 2, or 3, default: 1): " choice
+
+  # Si el usuario no elige nada, usar la opción predeterminada (1)
+  choice=${choice:-1}
 
   case $choice in
     1)
@@ -343,10 +401,12 @@ run_backtest() {
       test_slots "$timerange"
       ;;
     *)
-      echo "Invalid choice. Please select 1, 2, or 3."
+      echo "Invalid choice. Defaulting to Default backtest."
+      run_default_backtest "$timerange"
       ;;
   esac
 }
+
 
 
 # Clean up temporary files

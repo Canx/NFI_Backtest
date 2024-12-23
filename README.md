@@ -28,6 +28,8 @@ Ensure that the following tools are installed:
   The script will automatically clone or update the repository.
 - **User Data Directory**:
   The script creates and manages a `user_data` directory for storing backtest configurations and results.
+- **Pairlist Configuration**:
+  Place a file named `pairlist.json` in the root directory (next to `backtest.sh`).
 
 ## Usage
 
@@ -45,6 +47,7 @@ The `backtest.sh` script is pre-configured with default values for:
 - **Exchange**: `binance`
 - **Timerange**: `20241201-20241220`
 - **Timerange for Data Download**: Two months before the backtest timerange.
+- **Pairlist Configuration**: Ensure `pairlist.json` is present in the root directory.
 
 You can modify these values in the script or dynamically set them during execution.
 
