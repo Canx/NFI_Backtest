@@ -376,7 +376,90 @@ EOF
   echo "Slot testing completed. Results saved in $results_dir."
 }
 
-# Perform backtesting based on user choice
+generate_signal_config() {
+  local signals_config=$(mktemp)
+  local signal_numbers=()
+
+  echo "Enter the numbers of the long signals you want to disable (e.g., 6, 41, 120)." >&2
+  echo "Press Enter without input to finish." >&2
+
+  while true; do
+    read -rp "Enter signal number to disable (or press Enter to finish): " signal
+    if [[ -z $signal ]]; then
+      break
+    elif [[ $signal =~ ^[0-9]+$ ]]; then
+      signal_numbers+=("$signal")
+    else
+      echo "Invalid input. Please enter a numeric value." >&2
+    fi
+  done
+
+  if [[ ${#signal_numbers[@]} -eq 0 ]]; then
+    echo "No signals were selected to disable. Exiting." >&2
+    rm -f "$signals_config"
+    return 1
+  fi
+
+  echo "Generating signal configuration for disabled signals: ${signal_numbers[*]}..." >&2
+
+  # Crear el archivo JSON
+  {
+    echo "{"
+    echo "  \"long_entry_signal_params\": {"
+    for signal in "${signal_numbers[@]}"; do
+      echo "    \"long_entry_condition_${signal}_enable\": false,"
+    done
+    echo "  }"
+    echo "}"
+  } > "$signals_config"
+
+  # Solo devolver la ruta del archivo
+  echo "$signals_config"
+}
+
+
+
+
+run_custom_signals_backtest() {
+  local timerange=$1
+  local pairlist_config=$2
+  local signals_config=$3
+  local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+  local results_file="$results_dir/custom_signals_${repo_version}_${timerange}_${timestamp}.json"
+
+  # Verificar la existencia del archivo de configuración de señales
+  if [[ ! -f "$signals_config" ]]; then
+    echo "Error: Signal configuration file not found: $signals_config"
+    return 1
+  fi
+
+  echo "Using signal configuration file: $signals_config"
+  echo "Content of signal configuration:"
+  cat "$signals_config"
+
+  # Ejecutar el backtest
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$pairlist_config" \
+    -c "$signals_config" \
+    --timerange "$timerange" \
+    --export trades --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
+
+  if [[ $? -eq 0 ]]; then
+    echo "Results saved to $results_file"
+  else
+    echo "Error: Backtest failed."
+  fi
+}
+
+
+
+
 run_backtest() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
   local pairlist_config="pairlist.json"
@@ -385,30 +468,38 @@ run_backtest() {
   echo "1) Default backtest (default)"
   echo "2) Backtest without derisk"
   echo "3) Test different max_open_trades (slots)"
-  read -rp "Enter your choice (1, 2, or 3, default: 1): " choice
+  echo "4) Backtest with custom disabled signals"
+  read -rp "Enter your choice (1, 2, 3, or 4, default: 1): " choice
 
-  # Si el usuario no elige nada, usar la opción predeterminada (1)
   choice=${choice:-1}
 
   case $choice in
     1)
-      echo "Running Default Backtest..."
       run_default_backtest "$timerange" "$pairlist_config"
       ;;
     2)
-      echo "Running Backtest without Derisk..."
       run_noderisk_backtest "$timerange" "$pairlist_config"
       ;;
     3)
-      echo "Testing different max_open_trades (slots)..."
       test_slots "$timerange" "$pairlist_config"
       ;;
+    4)
+      local signals_config
+      signals_config=$(generate_signal_config)
+      if [[ $? -eq 0 && -n "$signals_config" ]]; then
+        run_custom_signals_backtest "$timerange" "$pairlist_config" "$signals_config"
+        rm -f "$signals_config"
+      else
+        echo "Skipping custom signal backtest due to errors."
+      fi
+      ;;
     *)
-      echo "Invalid choice. Defaulting to Default backtest."
+      echo "Invalid choice. Running default backtest."
       run_default_backtest "$timerange" "$pairlist_config"
       ;;
   esac
 }
+
 
 
 
