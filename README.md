@@ -68,6 +68,8 @@ The script provides the following options:
    Disables specific risk mitigation parameters.
 3. **Test Slots (max_open_trades)**:
    Tests the strategy with varying numbers of `max_open_trades` and outputs results for analysis.
+4. **Backtest with custom disabled signals**:
+   Allows you to disable specific long entry signals interactively.
 
 ### Results
 

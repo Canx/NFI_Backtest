@@ -336,7 +336,6 @@ run_noderisk_backtest() {
 test_slots() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
   local pairlist_config=$2
-  local max_slots=10
   local results_dir="$USER_DATA_DIR/backtest_results"
   local timestamp=$(date +"%Y%m%d_%H%M%S")
   local repo_version=$(get_repo_version)
@@ -344,37 +343,42 @@ test_slots() {
   # Ensure results directory exists
   mkdir -p "$results_dir"
 
-  echo "Testing different values for max_open_trades (slots) (version: $repo_version)..."
-  for slots in $(seq 1 "$max_slots"); do
-    local slots_config=$(mktemp)
-    local results_file="$results_dir/results_slots_${slots}_${repo_version}_${timerange}_${timestamp}.json"
+  # Prompt user for the number of slots
+  read -rp "Enter the number of max_open_trades (slots) to test: " slots
 
-    # Create temporary configuration for current slots
-    cat << EOF > "$slots_config"
+  # Validate input
+  if ! [[ "$slots" =~ ^[0-9]+$ ]] || [ "$slots" -le 0 ]; then
+    echo "Invalid input. Please enter a positive integer."
+    return 1
+  fi
+
+  local slots_config=$(mktemp)
+  local results_file="$results_dir/results_slots_${slots}_${repo_version}_${timerange}_${timestamp}.json"
+
+  # Create temporary configuration for the specified slots
+  cat << EOF > "$slots_config"
 {
   "max_open_trades": $slots
 }
 EOF
 
-    echo "Running backtest with $slots slots..."
-    freqtrade backtesting \
-      -c "$BACKTEST_CONFIG" \
-      -c "$pairlist_config" \
-      -c "$slots_config" \
-      --timerange "$timerange" \
-      --export signals \
-      --export-filename "$results_file" \
-      --timeframe-detail 1m \
-      -v
+  echo "Running backtest with $slots slots..."
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$pairlist_config" \
+    -c "$slots_config" \
+    --timerange "$timerange" \
+    --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
 
-    echo "Backtesting with $slots slots completed. Results saved to $results_file."
+  echo "Backtesting with $slots slots completed. Results saved to $results_file."
 
-    # Clean up temporary configuration file
-    rm -f "$slots_config"
-  done
-
-  echo "Slot testing completed. Results saved in $results_dir."
+  # Clean up temporary configuration file
+  rm -f "$slots_config"
 }
+
 
 generate_signal_config() {
   local signals_config=$(mktemp)
