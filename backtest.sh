@@ -6,7 +6,7 @@ REPO_NAME="NostalgiaForInfinity"
 USER_DATA_DIR="user_data"
 EXCHANGE="binance"
 DEFAULT_TIMERANGE="20241201-20241220"
-DEFAULT_TIMERANGE_DOWNLOAD="20241007-20241220"
+DEFAULT_TIMERANGE_DOWNLOAD="20241002-20241220"
 
 # Get the script's directory
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -21,6 +21,7 @@ main() {
   ensure_user_data
   generate_temp_configs
   configure_timerange "$DEFAULT_TIMERANGE" "$DEFAULT_TIMERANGE_DOWNLOAD"
+  select_nfi_version
 
   echo "Downloading data..."
   download_data "$TIMERANGE_DOWNLOAD"

@@ -35,6 +35,78 @@ configure_timerange() {
   echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
 }
 
+# Function to select a specific version of the NFI repository
+select_nfi_version() {
+  local default_branch="main"
+
+  echo "Fetching the latest updates from the repository..."
+  git -C "$REPO_PATH" fetch --all --tags
+
+  # Show the current branch
+  current_branch=$(git -C "$REPO_PATH" rev-parse --abbrev-ref HEAD)
+  echo "Currently checked out branch: $current_branch"
+
+  echo "Choose a version type:"
+  echo "1) Latest version of '$default_branch' (default)"
+  echo "2) Branch"
+  echo "3) Commit"
+  echo "4) Tag"
+  read -rp "Enter your choice (1, 2, 3, or 4, default: 1): " version_type
+
+  version_type=${version_type:-1} # Default to 1 if no input
+
+  case $version_type in
+    1)
+      echo "Switching to the latest version of '$default_branch'..."
+      git -C "$REPO_PATH" checkout "$default_branch" 2>/dev/null || {
+        echo "Error: Failed to switch to '$default_branch'."
+        exit 1
+      }
+      git -C "$REPO_PATH" pull origin "$default_branch"
+      ;;
+    2)
+      read -rp "Enter branch name (or press Enter to keep '$default_branch'): " selected_version
+      selected_version=${selected_version:-$default_branch}
+      echo "Switching to branch: $selected_version..."
+      git -C "$REPO_PATH" checkout "$selected_version" 2>/dev/null || {
+        echo "Error: Branch '$selected_version' does not exist."
+        exit 1
+      }
+      git -C "$REPO_PATH" pull origin "$selected_version"
+      ;;
+    3)
+      read -rp "Enter commit hash: " selected_version
+      echo "Switching to commit: $selected_version..."
+      git -C "$REPO_PATH" checkout "$selected_version" 2>/dev/null || {
+        echo "Error: Commit '$selected_version' does not exist."
+        exit 1
+      }
+      ;;
+    4)
+      echo "Available tags:"
+      git -C "$REPO_PATH" tag
+      read -rp "Enter tag name: " selected_version
+      echo "Switching to tag: $selected_version..."
+      git -C "$REPO_PATH" checkout "tags/$selected_version" 2>/dev/null || {
+        echo "Error: Tag '$selected_version' does not exist."
+        exit 1
+      }
+      ;;
+    *)
+      echo "Invalid choice. Defaulting to the latest version of '$default_branch'."
+      git -C "$REPO_PATH" checkout "$default_branch" 2>/dev/null || {
+        echo "Error: Failed to switch to '$default_branch'."
+        exit 1
+      }
+      git -C "$REPO_PATH" pull origin "$default_branch"
+      ;;
+  esac
+
+  echo "Repository is now on version: $(git -C "$REPO_PATH" rev-parse --short HEAD)"
+}
+
+
+
 
 # Ensure user_data directory exists and setup symbolic link for strategy
 ensure_user_data() {
@@ -149,6 +221,11 @@ download_data() {
 # Perform backtesting based on user choice
 run_backtest() {
   TIMERANGE=${1:-$DEFAULT_TIMERANGE}
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local results_dir="$USER_DATA_DIR/backtest_results"
+
+  # Ensure results directory exists
+  mkdir -p "$results_dir"
 
   echo "Choose the type of backtest to run:"
   echo "1) Default backtest"
@@ -157,25 +234,31 @@ run_backtest() {
 
   case $choice in
     1)
+      local results_file="$results_dir/default_${TIMERANGE}_${timestamp}.json"
       echo "Running default backtest..."
       freqtrade backtesting \
         -c "$BACKTEST_CONFIG" \
         -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
         --timerange "$TIMERANGE" \
-        --export trades \
+        --export trades --export signals \
+        --export-filename "$results_file" \
         --timeframe-detail 1m \
         -v
+      echo "Results saved to $results_file"
       ;;
     2)
+      local results_file="$results_dir/noderisk_${TIMERANGE}_${timestamp}.json"
       echo "Running backtest without derisk..."
       freqtrade backtesting \
         -c "$BACKTEST_CONFIG" \
         -c "$REPO_PATH/tests/backtests/pairlist-backtest-static-focus-group-binance-spot-usdt.json" \
         -c "$DISABLE_DERISK_CONFIG" \
         --timerange "$TIMERANGE" \
-        --export trades \
+        --export trades --export signals \
+        --export-filename "$results_file" \
         --timeframe-detail 1m \
         -v
+      echo "Results saved to $results_file"
       ;;
     *)
       echo "Invalid choice. Please select 1 or 2."
