@@ -1,8 +1,5 @@
 #!/bin/bash
-
-# Import functions
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-source "$SCRIPT_DIR/functions.sh"
+source "functions.sh"
 
 main() {
   select_pairlist_file
