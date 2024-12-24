@@ -1,3 +1,6 @@
 # TODO
 
-- run freqtrade webserver with signals after backtest.
+
+## Analyze.sh
+- improve analyze to show correct pairlist.
+- filter correctly backtest analysis files.

@@ -5,7 +5,7 @@ USER_DATA_DIR="user_data"
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 BACKTESTS_DIR="$SCRIPT_DIR/user_data/backtest_results"
-REPO_PATH="$SCRIPT_DIR/../NostalgiaForInfinity"
+REPO_PATH="$(realpath "$SCRIPT_DIR/../$REPO_NAME")"
 USER_DATA_DIR="$SCRIPT_DIR/user_data"
 EXCHANGE="binance"
 DEFAULT_TIMERANGE="20241201-20241220"

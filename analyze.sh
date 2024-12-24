@@ -38,6 +38,8 @@ run_analysis() {
 main() {
   echo "Starting backtest analysis..."
 
+  select_pairlist_file
+  
   # Generate temporary configuration files
   generate_temp_configs
 
@@ -55,7 +57,7 @@ main() {
 
   # Cleanup
   echo "Cleaning up temporary files..."
-  cleanup_temp_configs
+  #cleanup_temp_configs
 }
 
 main
