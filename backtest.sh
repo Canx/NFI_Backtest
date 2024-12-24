@@ -1,19 +1,7 @@
 #!/bin/bash
 
-# General settings
-REPO_URL="https://github.com/iterativv/NostalgiaForInfinity.git"
-REPO_NAME="NostalgiaForInfinity"
-USER_DATA_DIR="user_data"
-EXCHANGE="binance"
-DEFAULT_TIMERANGE="20241201-20241220"
-DEFAULT_TIMERANGE_DOWNLOAD="20241002-20241220"
-
-# Get the script's directory
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-REPO_PATH="$SCRIPT_DIR/$REPO_NAME"
-USER_DATA_DIR="$SCRIPT_DIR/$USER_DATA_DIR"
-
 # Import functions
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 source "$SCRIPT_DIR/functions.sh"
 
 main() {

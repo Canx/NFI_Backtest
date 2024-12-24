@@ -1,3 +1,15 @@
+# Global Configuration Variables
+REPO_URL="https://github.com/iterativv/NostalgiaForInfinity.git"
+REPO_NAME="NostalgiaForInfinity"
+USER_DATA_DIR="user_data"
+
+REPO_PATH="$SCRIPT_DIR/NostalgiaForInfinity"
+USER_DATA_DIR="$SCRIPT_DIR/user_data"
+EXCHANGE="binance"
+DEFAULT_TIMERANGE="20241201-20241220"
+DEFAULT_TIMERANGE_DOWNLOAD="20241002-20241220"
+
+
 # Ensure NostalgiaForInfinity repository exists
 ensure_repo() {
   if [ ! -d "$REPO_PATH" ]; then
@@ -401,7 +413,7 @@ run_default_backtest() {
     -c "$BACKTEST_CONFIG" \
     -c "$pairlist_config" \
     --timerange "$timerange" \
-    --export trades --export signals \
+    --export signals \
     --export-filename "$results_file" \
     --timeframe-detail 1m \
     -v
@@ -426,7 +438,7 @@ run_noderisk_backtest() {
     -c "$pairlist_config" \
     -c "$DISABLE_DERISK_CONFIG" \
     --timerange "$timerange" \
-    --export trades --export signals \
+    --export signals \
     --export-filename "$results_file" \
     --timeframe-detail 1m \
     -v
@@ -550,7 +562,7 @@ run_custom_signals_backtest() {
     -c "$pairlist_config" \
     -c "$signals_config" \
     --timerange "$timerange" \
-    --export trades --export signals \
+    --export signals \
     --export-filename "$results_file" \
     --timeframe-detail 1m \
     -v
