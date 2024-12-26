@@ -10,7 +10,7 @@ main() {
   select_nfi_version
 
   echo "Downloading data..."
-  download_data "$TIMERANGE_DOWNLOAD"
+  download_data
 
   echo "Running backtests..."
   run_backtest "$TIMERANGE"

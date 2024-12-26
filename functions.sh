@@ -9,7 +9,6 @@ REPO_PATH="$(realpath "$SCRIPT_DIR/../$REPO_NAME")"
 USER_DATA_DIR="$SCRIPT_DIR/user_data"
 EXCHANGE="binance"
 DEFAULT_TIMERANGE="20241201-20241220"
-DEFAULT_TIMERANGE_DOWNLOAD="20241002-20241220"
 
 
 # Ensure NostalgiaForInfinity repository exists
@@ -114,7 +113,8 @@ configure_timerange() {
 
   # Calculate TIMERANGE_DOWNLOAD
   TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
-  TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_START
+  TIMERANGE_END=$(echo "$TIMERANGE" | cut -d'-' -f2)
+  TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_END
 
   echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
 }
@@ -300,8 +300,6 @@ validate_feather_files() {
 }
 
 download_data() {
-  TIMERANGE_DOWNLOAD=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
-  
   # Usar la variable global $PAIRLIST_FILE
   local pairlist_config="$PAIRLIST_FILE"
 
@@ -319,8 +317,7 @@ download_data() {
     --exchange "$EXCHANGE" \
     -t 1m 5m 15m 1h 4h 1d \
     -c "$pairlist_config" \
-    --timerange "$TIMERANGE_DOWNLOAD" \
-    --prepend
+    --timerange "$TIMERANGE_DOWNLOAD"
 
   echo "Data download completed."
 }
