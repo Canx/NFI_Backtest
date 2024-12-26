@@ -197,11 +197,11 @@ get_repo_version() {
   local commit=$(git -C "$REPO_PATH" rev-parse --short HEAD)
 
   if [ -n "$tag" ]; then
-    echo "$tag"
+    echo "${tag//./_}"  # Substitute dots with underscores in tag
   elif [ "$branch" == "HEAD" ]; then
     echo "$commit"
   else
-    echo "$branch"
+    echo "${branch//./_}"  # Substitute dots with underscores in branch name
   fi
 }
 
@@ -411,6 +411,7 @@ run_default_backtest() {
   freqtrade backtesting \
     -c "$BACKTEST_CONFIG" \
     -c "$pairlist_config" \
+    --userdir $USER_DATA_DIR \
     --timerange "$timerange" \
     --export signals \
     --export-filename "$results_file" \
@@ -436,6 +437,7 @@ run_noderisk_backtest() {
     -c "$BACKTEST_CONFIG" \
     -c "$pairlist_config" \
     -c "$DISABLE_DERISK_CONFIG" \
+    --userdir $USER_DATA_DIR \
     --timerange "$timerange" \
     --export signals \
     --export-filename "$results_file" \
@@ -479,6 +481,7 @@ EOF
     -c "$BACKTEST_CONFIG" \
     -c "$pairlist_config" \
     -c "$slots_config" \
+    --userdir $USER_DATA_DIR \
     --timerange "$timerange" \
     --export signals \
     --export-filename "$results_file" \
@@ -560,6 +563,7 @@ run_custom_signals_backtest() {
     -c "$BACKTEST_CONFIG" \
     -c "$pairlist_config" \
     -c "$signals_config" \
+    --userdir $USER_DATA_DIR \
     --timerange "$timerange" \
     --export signals \
     --export-filename "$results_file" \

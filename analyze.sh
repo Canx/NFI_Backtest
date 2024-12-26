@@ -5,7 +5,9 @@ ANALYSIS_GROUPS="0 1 2 3 4 5"
 
 list_backtests() {
   echo "Available backtest results:"
-  find "$BACKTESTS_DIR" -type f -name "*.json" | nl
+  find "$BACKTESTS_DIR" -type f -name '*.json' \
+         -not -name '*meta.json' \
+         -not -name '.*.json' | nl
 }
 
 select_backtest() {
