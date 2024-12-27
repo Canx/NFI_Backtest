@@ -1,6 +1,6 @@
 # Backtesting Automation for NostalgiaForInfinity
 
-This project provides an automated solution to perform backtests for the **NostalgiaForInfinity** trading strategy using the `freqtrade` framework. The main script, `backtest.sh`, allows users to test different configurations and scenarios easily.
+This project provides an automated solution to perform backtests for the **NostalgiaForInfinity** trading strategy using the `freqtrade` framework. The main scripts, `backtest.sh` and `analyze.sh`, allow users to test configurations and analyze results.
 
 ## Requirements
 
@@ -40,46 +40,60 @@ Ensure the following tools are installed:
 ## Usage
 
 ### Step 1: Clone this repository
-Clone the repository containing the backtest script:
+Clone the repository containing the backtest and analysis scripts:
 
 ```bash
 git clone https://github.com/Canx/NFI_Backtest.git
 cd NFI_Backtest
 ```
 
-### Step 2: Configure the script
-The `backtest.sh` script is preconfigured with default values for:
-
-- **Exchange**: `binance`
-- **Timerange**: `20241201-20241220`
-- **Timerange for Data Download**: Two months prior to the backtest range.
-- **Pairlist Configuration**: Selected interactively from the `pairlists` folder.
-
-You can modify these values directly in the script or set them dynamically during execution.
-
-### Step 3: Run the script
-Execute the backtest script:
+### Step 2: Run a Backtest
+Run the backtesting script to generate results:
 
 ```bash
 ./backtest.sh
 ```
 
-### Features
+### Step 3: Analyze Backtest Results
 
-The script offers the following options:
+To analyze backtest results, use the `analyze.sh` script. This script allows you to:
 
-1. **Default Backtest**:
-   Runs the strategy with default settings.
-2. **Backtest Without Derisk**:
-   Disables specific risk mitigation parameters.
-3. **Test Slots (max_open_trades)**:
-   Allows testing the strategy with different numbers of maximum open trades.
-4. **Backtest with Custom Disabled Signals**:
-   Interactively disables specific long entry signals.
+1. View the details of a specific backtest file.
+2. Optionally run further analysis on the selected backtest file.
+
+#### Running the Analysis Script
+
+Execute the analysis script:
+
+```bash
+./analyze.sh
+```
+
+#### Features of `analyze.sh`
+
+1. **View Backtest Results**:
+   The script lists all backtest results saved in the `user_data/backtest_results/` directory. You can select a file to view its details interactively.
+
+2. **Run Detailed Analysis**:
+   After selecting a backtest file, the script gives you the option to run detailed analysis using `freqtrade backtesting-analysis`.
+
+### Example Workflow
+
+1. Run the backtest script to generate results:
+   ```bash
+   ./backtest.sh
+   ```
+
+2. Analyze the results using the `analyze.sh` script:
+   ```bash
+   ./analyze.sh
+   ```
+
+3. Follow the prompts to select and analyze a specific backtest file.
 
 ### Results
 
-Backtest results are saved in the `user_data/backtest_results/` directory. File names include:
+Backtest results are saved in the `user_data/backtest_results/` directory. Example file names include:
 
 - **Type of Backtest**: `default`, `noderisk`, or `slots`.
 - **Version**: The current branch, tag, or commit of the NostalgiaForInfinity repository.
@@ -91,18 +105,6 @@ Example:
 ```plaintext
 results_slots_5_main_20241201-20241220_20241223_123456.json
 ```
-
-### Analyzing Results
-
-To analyze backtest results, use `freqtrade backtesting-analysis`. For example:
-
-```bash
-freqtrade backtesting-analysis --export-filename /path/to/results.json
-```
-
-### Freqtrade Webserver (Pending Task)
-
-The functionality to run the freqtrade webserver after backtests and visualize signals is planned for future development.
 
 ## Contributing
 

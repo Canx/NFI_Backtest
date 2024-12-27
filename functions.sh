@@ -11,6 +11,30 @@ EXCHANGE="binance"
 DEFAULT_TIMERANGE="20241201-20241220"
 
 
+check_freqtrade() {
+  if ! command -v freqtrade &> /dev/null; then
+    echo "freqtrade not found in PATH. Checking in parent directory..."
+
+    if [[ -f "../freqtrade/.venv/bin/activate" ]]; then
+      echo "Activating virtual environment in ../freqtrade/.venv/bin/activate"
+      source "../freqtrade/.venv/bin/activate"
+
+      if command -v freqtrade &> /dev/null; then
+        echo "freqtrade is now available."
+      else
+        echo "Failed to make freqtrade available even after activation. Exiting."
+        exit 1
+      fi
+    else
+      echo "Virtual environment not found in ../freqtrade/.venv/. Please install freqtrade or provide the correct path."
+      exit 1
+    fi
+  else
+    echo "freqtrade is available in PATH."
+  fi
+}
+
+
 # Ensure NostalgiaForInfinity repository exists
 ensure_repo() {
   if [ ! -d "$REPO_PATH" ]; then
@@ -348,9 +372,6 @@ select_pairlist_file() {
   PAIRLIST_FILE="$pairlist_file"
 }
 
-
-
-
 extract_pairs() {
   local json_file=$1
 
@@ -392,6 +413,24 @@ check_data_availability() {
     return 1
   fi
 }
+
+show_backtest() {
+  local backtest_file=$1
+
+  if [[ -z "$backtest_file" ]]; then
+    echo "No backtest file specified. Exiting."
+    exit 1
+  fi
+
+  echo "Displaying details for backtest file: $backtest_file"
+  freqtrade backtesting-show \
+      -c "$BACKTEST_CONFIG" \
+      -c "$PAIRLIST_FILE" \
+      --userdir "$SCRIPT_DIR/user_data" \
+      --export-filename "$backtest_file"
+
+}
+
 
 ######################
 # Backtest functions #
@@ -576,6 +615,19 @@ run_custom_signals_backtest() {
     echo "Error: Backtest failed."
   fi
 }
+
+run_analysis() {
+  local backtest_file=$1
+
+  echo "Running analysis on $backtest_file..."
+  freqtrade backtesting-analysis \
+      -c "$BACKTEST_CONFIG" \
+      -c "$PAIRLIST_FILE" \
+      --userdir "$SCRIPT_DIR/user_data" \
+      --export-filename="$backtest_file" \
+      --analysis-groups $ANALYSIS_GROUPS
+}
+
 
 #################
 # Backtest menu #

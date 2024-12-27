@@ -25,19 +25,23 @@ select_backtest() {
   echo "Selected file: $backtest_file"
 }
 
-run_analysis() {
-  local backtest_file=$1
+show_results_and_analyze() {
+  select_backtest
+  show_backtest "$backtest_file"
 
-  echo "Running analysis on $backtest_file..."
-  freqtrade backtesting-analysis \
-      -c "$BACKTEST_CONFIG" \
-      -c "$PAIRLIST_FILE" \
-      --userdir "$SCRIPT_DIR/user_data" \
-      --export-filename="$backtest_file" \
-      --analysis-groups $ANALYSIS_GROUPS
+  echo "Do you want to run analysis on the selected backtest? (y/n)"
+  read -rp "Your choice: " analyze_choice
+
+  if [[ "$analyze_choice" == "y" || "$analyze_choice" == "Y" ]]; then
+    run_analysis "$backtest_file"
+  else
+    echo "Analysis skipped."
+  fi
 }
 
 main() {
+  check_freqtrade
+
   echo "Starting backtest analysis..."
 
   select_pairlist_file
@@ -51,15 +55,11 @@ main() {
     exit 1
   fi
 
-  # Select a backtest file
-  select_backtest
-
-  # Run analysis
-  run_analysis "$backtest_file"
+  show_results_and_analyze
 
   # Cleanup
   echo "Cleaning up temporary files..."
-  #cleanup_temp_configs
+  cleanup_temp_configs
 }
 
 main

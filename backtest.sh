@@ -2,6 +2,7 @@
 source "functions.sh"
 
 main() {
+  check_freqtrade
   select_pairlist_file
   ensure_repo
   ensure_user_data
