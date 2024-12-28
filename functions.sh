@@ -49,37 +49,6 @@ ensure_repo() {
   fi
 }
 
-# Function to configure timerange, using saved configuration if available
-configure_timerange() {
-  # Try to load the timerange from the saved configuration
-  load_timerange_config
-
-  # If TIMERANGE is still empty, prompt the user for input
-  if [ -z "$TIMERANGE" ]; then
-    echo "Current TIMERANGE: $DEFAULT_TIMERANGE"
-    read -rp "Enter new TIMERANGE (or press Enter to keep default): " new_timerange
-    TIMERANGE=${new_timerange:-$DEFAULT_TIMERANGE}
-  fi
-
-  # Save the selected timerange to the config file for future use
-  save_timerange_config "$TIMERANGE"
-
-  echo "New TIMERANGE: $TIMERANGE"
-  
-  # Continue with the rest of the process as before
-  local default_timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
-  echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
-  read -rp "Enter the number of days (default: 60): " days_before
-  days_before=${days_before:-60}
-
-  # Calculate TIMERANGE_DOWNLOAD
-  TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
-  TIMERANGE_DOWNLOAD=$(date -d "$TIMERANGE_START - $days_before days" +"%Y%m%d")-$TIMERANGE_START
-
-  echo "New TIMERANGE_DOWNLOAD: $TIMERANGE_DOWNLOAD"
-}
-
-
 # Save the timerange configuration to backtest.json
 save_timerange_config() {
   local timerange=$1
@@ -132,8 +101,8 @@ configure_timerange() {
   # Proceed with the timerange download configuration
   local default_timerange_download=${1:-$DEFAULT_TIMERANGE_DOWNLOAD}
   echo "How many days before TIMERANGE should be included in TIMERANGE_DOWNLOAD?"
-  read -rp "Enter the number of days (default: 60): " days_before
-  days_before=${days_before:-60}
+  read -rp "Enter the number of days (default: 3): " days_before
+  days_before=${days_before:-3}
 
   # Calculate TIMERANGE_DOWNLOAD
   TIMERANGE_START=$(echo "$TIMERANGE" | cut -d'-' -f1)
