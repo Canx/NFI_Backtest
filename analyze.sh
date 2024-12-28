@@ -13,14 +13,26 @@ list_backtests() {
 select_backtest() {
   echo "Select a backtest file by number:"
   list_backtests
+
+  # Store the list of files in an array, excluding *.meta.json files
+  mapfile -t files < <(find "$BACKTESTS_DIR" -type f -name "*.json" ! -name "*.meta.json")
+
   read -rp "Enter the number of the file to analyze: " choice
 
-  backtest_file=$(find "$BACKTESTS_DIR" -type f -name "*.json" | sed -n "${choice}p")
-
-  if [[ -z "$backtest_file" ]]; then
+  # Check if choice is a valid number
+  if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
     echo "Invalid selection. Exiting."
     exit 1
   fi
+
+  # Check if choice is within the range of available files
+  if (( choice < 1 || choice > ${#files[@]} )); then
+    echo "Invalid selection. Exiting."
+    exit 1
+  fi
+
+  # Select the file based on the choice
+  backtest_file="${files[choice-1]}"
 
   echo "Selected file: $backtest_file"
 }
