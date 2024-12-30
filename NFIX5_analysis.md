@@ -968,6 +968,19 @@ The two digits in the label `d_X_Y` have specific meanings related to the strate
 - The **first digit (`X`)** defines the profit range.
 - The **second digit (`Y`)** specifies the exact technical condition that justifies the exit within that range.
 
+### Stoploss signals
+
+#### Stoploss doom (`exit_{mode_name}_stoploss_doom`):
+
+The **Stoploss Doom Signal** targets scenarios where a trade has reached a catastrophic loss level and no longer meets the conditions for remaining open. This signal is designed to act as a safeguard, ensuring that trades are exited promptly in extreme adverse conditions to prevent further losses. 
+
+   - Triggered when:
+     - The **profit loss** exceeds the "doom" threshold (adjusted for market type and leverage).
+     - By default stop_threshold_doom_spot is 25% and stop_threshold_doom_futures is 60%.
+     - The **entry conditions are no longer valid**, indicating the trade setup is no longer favorable.
+     - The trade is **recent** (post-September 13, 2024) or being analyzed in a backtesting environment.
+   - This exit prevents further losses and resets the trade for a better opportunity. 
+
 ## TODO tags
 - exit_{mode_name}_stoploss_doom
 - exit_{mode_name}_stoploss_u_e
