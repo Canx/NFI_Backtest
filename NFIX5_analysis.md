@@ -998,6 +998,57 @@ The exit_{mode_name}_o_X signals are designed to manage trade exits based on a c
 exit_{mode_name}_u_X
 ```
 
+The **`exit_{mode_name}_u_X` signals** are designed to handle trade exits when the market is in a **bearish context**, as identified by the closing price being below the **EMA 200**. These signals focus on managing trades that are profitable or near breakeven but where the market shows signs of weakness or exhaustion.
+
+- **Protective Profit-Taking**:
+  - The strategy aims to secure small profits or minimize potential losses in a bearish market, where the risk of further declines is higher.
+  
+- **Dynamic Adjustments**:
+  - The RSI thresholds increase with profit levels, allowing trades with higher gains to tolerate more fluctuation before exiting.
+
+- **Risk-Averse in Downtrends**:
+  - By only triggering when the price is below the EMA 200, the logic ensures tighter risk management in bearish trends.
+
+
+##### **`exit_{mode_name}_u_0`**:
+- Triggered for minimal profits (0.1%–1%).
+- RSI < 12.0 indicates extreme bearish momentum, prompting a cautious exit.
+
+##### **`exit_{mode_name}_u_1` to `exit_{mode_name}_u_10`**:
+- Covers profit ranges from 1% to 12%.
+- RSI thresholds gradually increase from 30.0 to 48.0, reflecting a more relaxed approach as profits grow.
+
+##### **`exit_{mode_name}_u_11`**:
+- Profit range: 12%–20%.
+- RSI threshold decreases slightly to 46.0, emphasizing the need to protect profits in this range.
+
+##### **`exit_{mode_name}_u_12`**:
+- Triggered for profits of 20% or more.
+- RSI < 44.0 ensures the trade is exited promptly if bearish conditions persist, protecting significant gains.
+
+
+##### **Strengths**
+
+1. **Bearish Trend Adaptation**:
+   - The strategy recognizes the increased risks in a downtrend and prioritizes protecting profits or minimizing exposure.
+
+2. **Granular Exit Control**:
+   - Fine-tuned profit brackets allow for precise control of trade exits, making the strategy adaptable to various market conditions.
+
+3. **RSI-Based Validation**:
+   - The use of RSI ensures that exits are triggered based on both market momentum and the trade's profitability.
+
+
+##### **Potential Improvements**
+
+1. **Multi-Timeframe Confirmation**:
+   - Incorporate higher timeframe RSI or trend indicators to validate bearish conditions further.
+
+2. **Dynamic Volatility Adjustment**:
+   - Adjust profit and RSI thresholds based on market volatility to better handle fast-moving or stagnant markets.
+
+3. **Divergence Signals**:
+   - Integrate bearish RSI divergence detection to enhance the signal’s robustness in identifying weakening trends.
 
 
 ### Downtrend/descending based sells
