@@ -811,7 +811,7 @@ In summary, the "derisk" in NostalgiaForInfinityX5 functions as a safety mechani
 
 ## Tags<a name="exit_tags"></a>
 
-### Long exit signals
+### Long exit signals (original)
 
 #### Sell signal 1 (exit_{mode_name}_1_X_Y}
 
@@ -939,6 +939,67 @@ exit_{mode_name}_8_2_1
    - This exit reflects a more cautious approach, aiming to secure profits in a potentially bearish market where extreme overbought conditions are unlikely to sustain.
 
 
+### Long exit signals (main)
+
+#### Sell with profits over SMA 200
+
+```
+exit_{mode_name}_o_X
+```
+
+The exit_{mode_name}_o_X signals are designed to manage trade exits based on a combination of profit targets and Relative Strength Index (RSI) values. This mechanism is particularly focused on locking in profits when the trade is in a generally bullish context, as determined by the closing price being above the EMA 200.
+
+1. **Profit Thresholds (X)**:
+   ```python
+   elif current_profit >= 0.001:
+   ```
+   - The logic evaluates different **profit levels** ranging from 0.1% (`0.001`) to above 20% (`0.2`).
+   - For each profit range, an **RSI-based condition** determines whether the exit signal is triggered.
+   - The profit ranges are as follows:
+     - **0.001 to 0.01** (1%): Exit if RSI < 10.0.
+     - **0.01 to 0.02** (2%): Exit if RSI < 28.0.
+     - **0.02 to 0.03** (3%): Exit if RSI < 30.0.
+     - (Continues incrementally with higher thresholds up to **20% or more**).
+
+2. **RSI Thresholds**:
+   ```python
+   if last_candle["RSI_14"] < threshold:
+   ```
+   - RSI thresholds are **dynamic** and **increase with profit levels**, reflecting a willingness to hold the trade longer in stronger bullish conditions.
+   - For higher profits, the strategy allows higher RSI thresholds, signaling that a pullback from overbought conditions (indicated by a lower RSI) is acceptable.
+
+
+3. **Key Characteristics of the Signal**
+
+   - **Dynamic Profit-Taking**:
+      - As profits increase, the RSI threshold becomes more forgiving, allowing trades to ride the bullish trend longer. This ensures profits are locked in while still capturing potential upside momentum.
+   
+   - **Adaptation to Market Strength**:
+      - By only considering trades where the price is above the EMA 200, the strategy avoids reactive exits in weaker markets and focuses on maximizing gains in a strong market.
+
+   - **Granular Exit Management**:
+      - The use of incremental profit brackets (e.g., 1% to 2%, 2% to 3%) allows the strategy to handle trade exits with fine-tuned precision, adapting to varying market conditions.
+
+4. **Potential Improvements**
+
+   1. **RSI Divergences**:
+      - Incorporate divergence detection (e.g., RSI showing bearish divergence despite profits) to enhance the robustness of exits.
+
+   2. **Volatility Adjustments**:
+      - Adjust profit or RSI thresholds dynamically based on market volatility to better adapt to fast-moving markets.
+
+   3. **Trailing Stop Integration**:
+      - Introduce trailing stop-loss mechanisms for profits beyond 10% to lock in gains while leaving room for potential upside.
+
+
+#### Sell with profits under SMA 200
+
+```
+exit_{mode_name}_u_X
+```
+
+
+
 ### Downtrend/descending based sells
 
 ```
@@ -982,7 +1043,7 @@ The **Stoploss Doom Signal** targets scenarios where a trade has reached a catas
    - This exit prevents further losses and resets the trade for a better opportunity. 
 
 ## TODO tags
-- exit_{mode_name}_stoploss_doom
+
 - exit_{mode_name}_stoploss_u_e
 - exit_profit_{mode_name}_max
 - exit_long_quick_q_{1-10}
