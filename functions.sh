@@ -280,6 +280,19 @@ EOF
 
 }
 
+generate_position_adjustment_config() {
+  local position_adjustment_config=$(mktemp)
+
+  cat << EOF > "$position_adjustment_config"
+{
+  "position_adjustment_enable": false
+}
+EOF
+
+  echo "$position_adjustment_config"
+}
+
+
 validate_feather_files() {
   local data_dir="$USER_DATA_DIR/data/$EXCHANGE"
   for file in "$data_dir"/*.feather; do
@@ -597,6 +610,37 @@ run_analysis() {
       --analysis-groups $ANALYSIS_GROUPS
 }
 
+run_position_adjustment_backtest() {
+  local timerange=$1
+  local pairlist_config=$2
+  local results_dir="$USER_DATA_DIR/backtest_results"
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local repo_version=$(get_repo_version)
+  local results_file="$results_dir/position_adjustment_${repo_version}_${timerange}_${timestamp}.json"
+
+  # Genera el archivo de configuración temporal
+  local position_adjustment_config
+  position_adjustment_config=$(generate_position_adjustment_config)
+
+  echo "Running backtest with position adjustment disabled..."
+  freqtrade backtesting \
+    -c "$BACKTEST_CONFIG" \
+    -c "$pairlist_config" \
+    -c "$position_adjustment_config" \
+    --userdir $USER_DATA_DIR \
+    --timerange "$timerange" \
+    --export signals \
+    --export-filename "$results_file" \
+    --timeframe-detail 1m \
+    -v
+
+  echo "Results saved to $results_file"
+
+  # Limpia el archivo de configuración temporal
+  rm -f "$position_adjustment_config"
+}
+
+
 
 #################
 # Backtest menu #
@@ -604,8 +648,6 @@ run_analysis() {
 
 run_backtest() {
   local timerange=${1:-$DEFAULT_TIMERANGE}
-  
-  # Usar la variable global $PAIRLIST_FILE
   local pairlist_config="$PAIRLIST_FILE"
 
   echo "Choose the type of backtest to run:"
@@ -613,7 +655,8 @@ run_backtest() {
   echo "2) Backtest without derisk"
   echo "3) Test different max_open_trades (slots)"
   echo "4) Backtest with custom disabled signals"
-  read -rp "Enter your choice (1, 2, 3, or 4, default: 1): " choice
+  echo "5) Backtest with position adjustment disabled"
+  read -rp "Enter your choice (1, 2, 3, 4, or 5, default: 1): " choice
 
   choice=${choice:-1}
 
@@ -637,12 +680,16 @@ run_backtest() {
         echo "Skipping custom signal backtest due to errors."
       fi
       ;;
+    5)
+      run_position_adjustment_backtest "$timerange" "$pairlist_config"
+      ;;
     *)
       echo "Invalid choice. Running default backtest."
       run_default_backtest "$timerange" "$pairlist_config"
       ;;
   esac
 }
+
 
 
 # Clean up temporary files
