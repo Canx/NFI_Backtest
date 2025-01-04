@@ -765,7 +765,418 @@ The goal of "grind mode" is to improve the chances of making a profit when the a
 
 In summary, "grind mode" in NostalgiaForInfinityX5 is an aggressive strategy aimed at leveraging price drops to accumulate a position at a lower average cost. By increasing the position during market weakness, "grind mode" seeks to maximize potential profits when the price reverses.
 
----
+### Grind buy signal 1 (gd1)
+
+1. **Initial Restrictions**:
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active operations (sub grind) must be less than the maximum allowed: `grind_1_sub_grind_count < grind_1_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following scenarios must apply:
+     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation.
+     - The strategy is in "derisk" mode, and this is the first sub operation.
+     - Grind mode is enabled, and this is the first sub operation.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated profit is greater than 6%.
+
+5. **Short Grind Entry Condition**:
+   - The entry must be categorized as a short grind entry: `is_short_grind_entry`.
+
+
+#### Detailed Analysis
+
+1. **Focus on Profitability**:
+   Unlike **Grinding 6 (GD6)**, which includes loss thresholds to limit entry during losses, GD1 emphasizes profitability. Conditions like `slice_profit > 0.02` and `slice_profit > 0.06` ensure that the strategy enters only when there is evidence of positive returns.
+
+2. **Risk Management Through Time**:
+   By spacing out entries (at least 10 minutes between entries and 2-6 hours between filled orders depending on the conditions), GD1 mitigates the risk of over-trading.
+
+3. **Dependence on Context and Entry Type**:
+   The condition `is_short_grind_entry` enforces that only specific short-grind setups qualify for entry, likely tied to the broader strategy's rules.
+
+4. **Flexibility for Sub Operations**:
+   The logic accounts for varying thresholds for different sub grind operations (`grind_1_sub_thresholds`), providing flexibility to manage entries based on the number of sub operations already active.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Dynamic Profit Thresholds**:
+   - The static profit thresholds (`0.02` and `0.06`) could be adapted dynamically based on market volatility or recent performance.
+
+2. **Indicator-Based Conditions**:
+   - Unlike GD6, GD1 lacks technical indicator checks (e.g., RSI, EMA). Adding these could provide additional confirmation for entries, especially for short grind entries.
+
+3. **Modularity and Readability**:
+   - Breaking the logic into smaller functions could make it easier to debug, update, and maintain.
+
+4. **Testing Under Different Market Conditions**:
+   - Ensure the strategy performs well in trending, ranging, and volatile markets to validate the robustness of these conditions.
+
+### Grind buy signal 2 (gd2)
+
+1. **Initial Restrictions**:
+   - Order tags must exist: `has_order_tags`.
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_2_sub_grind_count < grind_2_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following scenarios must apply:
+     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_2_distance_ratio < grind_2_sub_thresholds[grind_2_sub_grind_count]`.
+     - The strategy is in "derisk" mode, and this is the first sub operation.
+     - Grind mode is enabled, and this is the first sub operation.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated profit is greater than 6%.
+
+5. **Short Grind Entry Condition**:
+   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
+
+#### Detailed Analysis
+
+1. **Profit-Oriented Logic**:
+   - Like **GD1**, GD2 focuses on profitability by including conditions such as `slice_profit > 0.02` and `slice_profit > 0.06`. These ensure the strategy enters positions only when there is evidence of positive returns.
+
+2. **Time-Based Entry Spacing**:
+   - Conditions such as `current_time - timedelta(minutes=10)` and `current_time - timedelta(hours=2)` ensure that entries are spaced apart, preventing over-trading.
+
+3. **Flexibility for Sub Operations**:
+   - The condition `grind_2_sub_thresholds` provides flexibility by setting thresholds that vary based on the number of sub operations already active. This allows for nuanced handling of entries based on the strategy's current position in the market.
+
+4. **Risk and Context Management**:
+   - By incorporating `is_derisk` and `is_derisk_calc`, the strategy accounts for risk-reducing scenarios, especially for the first sub operation.
+
+5. **Dependence on Short Grind Entries**:
+   - The condition `is_short_grind_entry` ensures that only specific setups designed for short grind entries are considered, maintaining consistency with the overall strategy's framework.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Dynamic Profit and Distance Thresholds**:
+   - Consider adjusting the profit thresholds (`0.02` and `0.06`) and distance ratio dynamically based on market conditions (e.g., volatility or recent performance).
+
+2. **Incorporating Technical Indicators**:
+   - Unlike **GD6**, which includes indicators like RSI and EMA for additional confirmation, GD2 relies solely on thresholds and profitability metrics. Adding technical indicators could improve the precision of entries.
+
+3. **Code Modularity**:
+   - Breaking this logic into smaller, reusable functions could make the code more maintainable and easier to debug.
+
+4. **Performance Testing**:
+   - Test the strategy across various market conditions (e.g., trending, ranging, and volatile markets) to ensure robustness.
+
+
+#### Comparison to GD1
+
+The logic for **GD2** is very similar to **GD1**, focusing on profitability and time-based restrictions. However, **GD2** includes an additional condition requiring order tags (`has_order_tags`). Both strategies share an emphasis on positive slice profit, but neither includes technical indicators as seen in **GD6**.
+
+### Grind buy signal 3 (gd3)
+
+1. **Initial Restrictions**:
+   - Order tags must exist: `has_order_tags`.
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_3_sub_grind_count < grind_3_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following scenarios must apply:
+     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_3_distance_ratio < grind_3_sub_thresholds[grind_3_sub_grind_count]`.
+     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
+     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated profit is greater than 6%.
+
+5. **Short Grind Entry Condition**:
+   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
+
+
+#### Detailed Analysis
+
+1. **Profit-Oriented Logic**:
+   - Similar to **GD1** and **GD2**, GD3 focuses on profitability by requiring conditions such as `slice_profit > 0.02` and `slice_profit > 0.06`. These thresholds ensure the strategy enters only when positive returns are evident.
+
+2. **Time-Based Entry Spacing**:
+   - Conditions like `current_time - timedelta(minutes=10)` and `current_time - timedelta(hours=2)` ensure that entries are spaced apart to prevent over-trading.
+
+3. **Flexibility for Sub Operations**:
+   - The condition `grind_3_sub_thresholds` allows for dynamic handling of sub operations by setting thresholds that vary based on the number of active sub operations.
+
+4. **Risk and Context Management**:
+   - By incorporating `is_derisk` and `is_derisk_calc`, the strategy ensures proper handling of risk-reduction scenarios for initial sub operations.
+
+5. **Dependence on Short Grind Entries**:
+   - The condition `is_short_grind_entry` ensures consistency with the broader strategy by limiting entries to setups designed for short grinds.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Dynamic Profit and Distance Thresholds**:
+   - The profit thresholds (`0.02` and `0.06`) and distance ratio could be dynamically adjusted based on market volatility or recent performance.
+
+2. **Addition of Technical Indicators**:
+   - Unlike **GD6**, GD3 does not utilize technical indicators such as RSI or EMA. Adding these could enhance precision and alignment with market conditions.
+
+3. **Modularity**:
+   - Breaking this logic into smaller, reusable functions would improve maintainability and make debugging easier.
+
+4. **Performance Testing**:
+   - Testing the strategy under different market conditions (e.g., trending, ranging, and volatile markets) would help validate its robustness and adaptability.
+
+
+#### Comparison to Other Grinding Strategies
+
+- **Similarity to GD1 and GD2**:
+  - GD3 shares a focus on profitability and similar timing conditions for entries. All three strategies emphasize slice profit thresholds and rely on `is_short_grind_entry` as a critical condition.
+
+- **Differences from GD6**:
+  - GD3 does not incorporate technical indicators like RSI or EMA, which are used in GD6 to refine entries further.
+
+
+### Grind buy signal 4 (gd6)
+
+1. **Initial Restrictions**:
+   - Order tags must exist: `has_order_tags`.
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_4_sub_grind_count < grind_4_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following scenarios must apply:
+     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_4_distance_ratio < grind_4_sub_thresholds[grind_4_sub_grind_count]`.
+     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
+     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated profit is greater than 6%.
+
+5. **Enhanced Entry Conditions**:
+   - One of the following must apply:
+     - The entry qualifies as a short grind entry: `is_short_grind_entry`.
+     - Additional indicator-based conditions are met:
+       - Accumulated profit (`slice_profit`) is greater than 4%: `slice_profit > 0.04`.
+       - **RSI Conditions**:
+         - `RSI_14` is above 64.
+         - `RSI_3` across multiple timeframes (15m, 1h, and 4h) is below their respective thresholds (90 for shorter timeframes and 85 for longer ones).
+       - **AROON Conditions**:
+         - The AROOND_14 indicator is below 25.
+       - **Price Condition**:
+         - The current price is above 101.2% of the EMA_20: `last_candle["close"] > (last_candle["EMA_20"] * 1.012)`.
+
+
+#### Detailed Analysis
+
+1. **Profit-Oriented Logic**:
+   - GD4 incorporates profitability thresholds (`slice_profit > 0.02` and `slice_profit > 0.04`) to ensure entries are made in favorable conditions.
+
+2. **Technical Indicators for Confirmation**:
+   - Unlike GD1, GD2, and GD3, GD4 includes additional technical indicators to refine entries:
+     - RSI conditions favor overbought scenarios for potential reversals, balancing momentum and entry precision.
+     - AROOND_14 and EMA conditions ensure alignment with market trends.
+
+3. **Flexibility for Sub Operations**:
+   - As with other Grinding strategies, the use of thresholds for sub operations (`grind_4_sub_thresholds`) allows dynamic handling of entries based on the number of active sub operations.
+
+4. **Enhanced Risk and Entry Management**:
+   - By requiring specific RSI and price conditions for non-short grind entries, GD4 seeks to filter out low-probability setups.
+
+5. **Time-Based Entry Spacing**:
+   - The spacing conditions (`10 minutes` and `2-6 hours`) prevent over-trading and ensure more deliberate entry timing.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Dynamic Threshold Adjustments**:
+   - The static thresholds for slice profit and indicators could be dynamically adjusted based on market conditions, such as volatility or recent performance.
+
+2. **Refinement of RSI Conditions**:
+   - The RSI thresholds could be fine-tuned to consider different market phases (e.g., trending vs. ranging).
+
+3. **Enhanced Modularity**:
+   - Breaking the logic into modular functions for sub operations, time conditions, and indicator-based filtering would improve maintainability and readability.
+
+4. **Performance Monitoring**:
+   - Backtesting across diverse market conditions (e.g., trending, ranging, or volatile markets) would help validate the robustness and adaptability of the strategy.
+
+
+#### Comparison to Other Grinding Strategies
+
+- **Similarities**:
+  - GD4 shares foundational structures with GD1, GD2, and GD3, including sub-operation thresholds, slice profit conditions, and time-based restrictions.
+
+- **Key Differences**:
+  - **Indicator-Based Filters**: GD4 stands out by incorporating additional technical indicators (RSI, AROON, and EMA).
+  - **Stronger Profit Thresholds**: GD4 requires slice profit > 4% in certain conditions, compared to lower thresholds in other grinding strategies.
+
+### Grind buy signal 5 (gd5)
+
+1. **Initial Restrictions**:
+   - Order tags must exist: `has_order_tags`.
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_5_sub_grind_count < grind_5_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following scenarios must apply:
+     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_5_distance_ratio < grind_5_sub_thresholds[grind_5_sub_grind_count]`.
+     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
+     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated profit is greater than 6%.
+
+5. **Short Grind Entry Condition**:
+   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
+
+
+#### Detailed Analysis
+
+1. **Profit-Oriented Logic**:
+   - Like **GD1, GD2, and GD3**, GD5 incorporates profitability thresholds (`slice_profit > 0.02` and `slice_profit > 0.06`) to ensure entries occur under favorable conditions.
+
+2. **Time-Based Entry Spacing**:
+   - Time-based restrictions (`10 minutes` and `2-6 hours`) prevent frequent entries, ensuring the strategy does not overtrade and operates with sufficient spacing between orders.
+
+3. **Sub Operation Flexibility**:
+   - The use of sub-operation thresholds (`grind_5_sub_thresholds`) allows for adaptive handling of entries based on the number of active sub operations.
+
+4. **Risk and Context Management**:
+   - The inclusion of `is_derisk` and `is_derisk_calc` ensures that risk-reducing conditions are prioritized for the first sub operation.
+
+5. **Dependence on Short Grind Entries**:
+   - The condition `is_short_grind_entry` enforces alignment with the strategy’s focus, limiting entries to setups specifically designed for short grind scenarios.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Incorporating Technical Indicators**:
+   - Unlike **GD4**, GD5 lacks additional technical filters like RSI or EMA, which could improve precision and market alignment.
+
+2. **Dynamic Threshold Adjustments**:
+   - The fixed profit thresholds (`0.02` and `0.06`) and distance ratio could be dynamically adjusted based on market conditions (e.g., volatility or trend strength).
+
+3. **Code Modularity**:
+   - Breaking the logic into smaller functions (e.g., time-based conditions, sub operation thresholds, and profitability checks) would enhance readability and maintainability.
+
+4. **Performance Testing**:
+   - Backtesting across various market conditions (trending, ranging, and volatile markets) would help validate GD5's robustness and effectiveness.
+
+
+#### Comparison to Other Grinding Strategies
+
+- **Similarity to GD1, GD2, and GD3**:
+  - GD5 shares a focus on profitability and time-based restrictions. The structure and logic are largely consistent across these strategies.
+
+- **Difference from GD4**:
+  - GD4 incorporates additional technical indicators (RSI, AROON, and EMA), whereas GD5 relies on slice profit thresholds and short grind entries without technical filters.
+
+
+GD5 is a straightforward, profit-driven strategy similar to GD1-GD3, with a clear focus on managing sub operations and enforcing profitability conditions. However, it lacks the enhanced filtering provided by technical indicators (seen in GD4). 
+
+
+### Grind buy signal 6 (gd6)
+
+1. **Initial Restrictions**:
+   - Order tags must exist: `has_order_tags`.
+   - It must not be a partial sell: `not partial_sell`.
+   - The number of active operations (sub grind) must be less than the maximum allowed: `grind_6_sub_grind_count < grind_6_max_sub_grinds`.
+
+2. **Specific Context Conditions**:
+   - One of the following situations must apply:
+     - At least one sub operation already exists, and the current distance ratio is below the configured threshold.
+     - The strategy is in "derisk" mode, and this is the first sub operation.
+     - Grind mode is enabled, and this is the first sub operation.
+
+3. **Time Restrictions**:
+   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
+   - The last filled order must meet at least one of these conditions:
+     - It was executed more than 2 hours ago.
+     - Accumulated loss (slice profit) is less than -2%: `slice_profit < -0.02`.
+
+4. **Restrictions on Open Grinds**:
+   - If no grinds are open, the operation can proceed.
+   - If grinds are open, at least one of these conditions must apply:
+     - The last order was filled more than 6 hours ago.
+     - Accumulated loss is less than -6%.
+
+5. **Conditions Based on Technical Indicators**:
+   - If it is a long grind entry (`is_long_grind_entry`), it is automatically allowed.
+   - If not, then:
+     - RSI_14 must be below 36.
+     - RSI_3 across multiple timeframes must be above 10 (1 minute, 15 minutes, 1 hour, and 4 hours).
+     - The AROONU_14 indicator must be below 25.
+     - The current price must be below 98.8% of the EMA_20.
+
+
+#### Detailed Analysis
+
+1. **Complex but Structured Logic**:
+   The logic is well-organized and uses combined logical operators to cover a wide range of situations. This ensures flexibility and control under different market conditions.
+
+2. **Reliance on Technical Indicators**:
+   Using multiple periods for RSI_3 and checking oversold levels (RSI_14 < 36 and AROONU_14 < 25) suggests that this strategy aims to identify opportunities in highly oversold markets.
+
+3. **Time-Based Restrictions**:
+   These limit entry frequency, avoiding over-trading and ensuring that entry decisions are spaced either by time or loss context.
+
+4. **Risk Management**:
+   The "slice_profit" conditions indicate a focus on limiting cumulative losses. Additionally, both distance ratios and custom thresholds for sub operations are taken into account.
+
+
+#### Potential Improvements or Adjustments
+
+1. **Modularity**:
+   Consider breaking these conditions into smaller functions to make the code easier to maintain and debug.
+
+2. **Dynamic Thresholds**:
+   Certain conditions, such as RSI values or percentages related to the EMA, could be adjusted dynamically based on volatility or general market conditions.
+
+3. **Performance Monitoring**:
+   It's essential to test how these conditions affect performance across different market environments (trending, ranging, high volatility, etc.).
+
+If you'd like, we can optimize the code or run backtests using historical data to validate its effectiveness.
+
 
 ## Rebuy Mode<a name="rebuy"></a>
 
