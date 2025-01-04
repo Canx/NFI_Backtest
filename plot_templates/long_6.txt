@@ -1,0 +1,32 @@
+{
+  "main_plot": {},
+  "subplots": {
+    "RSI_20": {
+      "RSI_20": {
+        "color": "#ba77cb"
+      }
+    },
+    "RSI_3": {
+      "RSI_3": {
+        "color": "#95c79b"
+      }
+    },
+    "STOCHRSIk_14_14_3_3": {
+      "STOCHRSIk_14_14_3_3": {
+        "color": "#d4e4ed"
+      }
+    },
+    "close + SMA_16": {
+      "close": {
+        "color": "#29f34a",
+        "type": "line",
+        "fill_to": "SMA_16"
+      },
+      "SMA_16": {
+        "color": "#92e12a",
+        "type": "line",
+        "fill_to": "close"
+      }
+    }
+  }
+}
