@@ -646,11 +646,12 @@ run_position_adjustment_backtest() {
 # Backtest menu #
 #################
 
-run_backtest() {
-  local timerange=${1:-$DEFAULT_TIMERANGE}
-  local pairlist_config="$PAIRLIST_FILE"
+# Variable global para almacenar el tipo de backtest
+BACKTEST_TYPE=""
 
-  echo "Choose the type of backtest to run:"
+# Función para preguntar por el tipo de backtest y guardarlo
+select_backtest_type() {
+  echo "Choose the type of backtest to run for all segments:"
   echo "1) Default backtest (default)"
   echo "2) Backtest without derisk"
   echo "3) Test different max_open_trades (slots)"
@@ -658,9 +659,15 @@ run_backtest() {
   echo "5) Backtest with position adjustment disabled"
   read -rp "Enter your choice (1, 2, 3, 4, or 5, default: 1): " choice
 
-  choice=${choice:-1}
+  BACKTEST_TYPE=${choice:-1}
+}
 
-  case $choice in
+# Función para ejecutar el tipo de backtest seleccionado
+execute_backtest_by_type() {
+  local timerange=$1
+  local pairlist_config=$2
+
+  case $BACKTEST_TYPE in
     1)
       run_default_backtest "$timerange" "$pairlist_config"
       ;;
@@ -689,6 +696,86 @@ run_backtest() {
       ;;
   esac
 }
+
+# Function to split the TIMERANGE into monthly segments
+split_timerange_into_months() {
+  local start_date=$(echo "$1" | cut -d'-' -f1)
+  local end_date=$(echo "$1" | cut -d'-' -f2)
+
+  # Convert start and end dates to a format usable by date command
+  local start_date_formatted=$(date -d "$start_date" +"%Y-%m-%d")
+  local end_date_formatted=$(date -d "$end_date" +"%Y-%m-%d")
+
+  local current_date=$start_date_formatted
+  local segments=()
+
+  while [[ "$current_date" < "$end_date_formatted" ]]; do
+    # Get the first day of the next month
+    local next_month=$(date -d "$current_date +1 month" +"%Y-%m-01")
+
+    # If the next month starts after the end date, adjust to the end date
+    if [[ "$next_month" > "$end_date_formatted" ]]; then
+      next_month=$end_date_formatted
+    fi
+
+    # Format the segment as YYYYMMDD-YYYYMMDD and add to the segments array
+    local segment=$(date -d "$current_date" +"%Y%m%d")-$(date -d "$next_month -1 day" +"%Y%m%d")
+    segments+=("$segment")
+
+    # Update current_date to the start of the next month
+    current_date=$next_month
+  done
+
+  echo "${segments[@]}"
+}
+
+run_backtest() {
+  local timerange=${1:-$DEFAULT_TIMERANGE}
+  local pairlist_config="$PAIRLIST_FILE"
+
+  # Obtener información de la versión del repositorio
+  local repo_version=$(get_repo_version)
+
+  # Asignar un nombre al tipo de backtest basado en la selección
+  local backtest_type_name
+  case $BACKTEST_TYPE in
+    1) backtest_type_name="default" ;;
+    2) backtest_type_name="noderisk" ;;
+    3) backtest_type_name="slots_test" ;;
+    4) backtest_type_name="custom_signals" ;;
+    5) backtest_type_name="position_adjustment" ;;
+    *) backtest_type_name="unknown" ;;
+  esac
+
+  # Nombre dinámico para el archivo de resultados combinados
+  local combined_output_file="$USER_DATA_DIR/backtest_results/${backtest_type_name}_${repo_version}_${timerange}.txt"
+
+  # Elimina el archivo combinado si ya existe
+  > "$combined_output_file"
+
+  # Divide el rango en segmentos mensuales
+  local segments=($(split_timerange_into_months "$timerange"))
+
+  echo "Backtesting across the following segments:"
+  for segment in "${segments[@]}"; do
+    echo "$segment"
+  done
+
+  # Ejecuta el tipo de backtest seleccionado para cada segmento
+  for segment in "${segments[@]}"; do
+    echo "Running backtest for segment: $segment"
+
+    # Ejecuta el backtest y filtra INFO, DEBUG y WARNING antes de agregarlo al archivo combinado
+    {
+      echo "Results for segment: $segment"
+      execute_backtest_by_type "$segment" "$pairlist_config" | grep -vE "(INFO|DEBUG|WARNING)"
+      echo -e "\n-----------------------------\n"
+    } >> "$combined_output_file"
+  done
+
+  echo "All segmented backtests completed. Combined output saved to: $combined_output_file"
+}
+
 
 
 
