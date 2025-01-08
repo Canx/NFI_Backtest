@@ -19,10 +19,31 @@ from datetime import datetime
 # Resolve the actual script location, even if called through a symlink
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 STRAT_DIR = SCRIPT_DIR  # Assuming the script is in the root of NostalgiaForInfinity
+LOG_FILE = os.path.join(SCRIPT_DIR, "run_bot.log")
 
 def log_message(message):
-    """Log message to console."""
-    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}")
+    """Log message to console and a log file."""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    log_entry = f"{timestamp} - {message}"
+    print(log_entry)
+    with open(LOG_FILE, "a") as log_file:
+        log_file.write(log_entry + "\n")
+
+
+def check_branch_status():
+    """Ensure the current branch is valid and has a remote tracking branch."""
+    try:
+        branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], check=True, text=True, capture_output=True).stdout.strip()
+        if branch == "HEAD":
+            log_message("Error: You are in a detached HEAD state. Please switch to a valid branch.")
+            return False
+
+        tracking_branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], check=True, text=True, capture_output=True).stdout.strip()
+        log_message(f"Current branch '{branch}' is tracking '{tracking_branch}'.")
+        return True
+    except subprocess.CalledProcessError:
+        log_message("Error: The current branch is not tracking any remote branch.")
+        return False
 
 
 def check_strategy_update():
@@ -31,12 +52,16 @@ def check_strategy_update():
     try:
         os.chdir(STRAT_DIR)
         subprocess.run(["git", "fetch"], check=True)
+
         local = subprocess.run(["git", "rev-parse", "HEAD"], check=True, text=True, capture_output=True).stdout.strip()
         remote = subprocess.run(["git", "rev-parse", "origin/main"], check=True, text=True, capture_output=True).stdout.strip()
 
         if local != remote:
             log_message("Update detected in the strategy repository.")
-            subprocess.run(["git", "pull"], check=True)
+            if check_branch_status():
+                subprocess.run(["git", "pull"], check=True)
+            else:
+                log_message("Warning: Unable to pull updates due to branch issues. Skipping pull.")
             return True
         else:
             log_message("No updates in the strategy repository.")
@@ -60,8 +85,8 @@ def restart_docker_compose():
     log_message("Restarting Docker Compose...")
     try:
         os.chdir(STRAT_DIR)
-        subprocess.run(["docker-compose", "down"], check=True)
-        subprocess.run(["docker-compose", "up", "-d"], check=True)
+        subprocess.run(["docker", "compose", "down"], check=True)
+        subprocess.run(["docker", "compose", "up", "-d"], check=True)
         log_message("Docker Compose restarted successfully.")
     except subprocess.CalledProcessError as e:
         log_message(f"Error restarting Docker Compose: {e}")
@@ -82,4 +107,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
