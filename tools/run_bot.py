@@ -92,6 +92,21 @@ def restart_docker_compose():
         log_message(f"Error restarting Docker Compose: {e}")
 
 
+def is_docker_running():
+    """Check if Docker Compose is running."""
+    try:
+        result = subprocess.run(["docker", "compose", "ps"], check=True, text=True, capture_output=True).stdout
+        if "Up" in result:
+            log_message("Docker Compose is already running.")
+            return True
+        else:
+            log_message("Docker Compose is not running.")
+            return False
+    except subprocess.CalledProcessError:
+        log_message("Error checking Docker Compose status.")
+        return False
+
+
 def main():
     log_message("Starting update process...")
 
@@ -99,10 +114,10 @@ def main():
 
     update_needed = check_strategy_update()
 
-    if update_needed:
+    if update_needed or not is_docker_running():
         restart_docker_compose()
     else:
-        log_message("No updates detected. Docker Compose not restarted.")
+        log_message("No updates detected and Docker Compose is already running. No action taken.")
 
 
 if __name__ == "__main__":
