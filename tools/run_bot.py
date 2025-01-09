@@ -1,16 +1,3 @@
-# Usage:
-# This script is designed to manage a single bot using Docker Compose.
-# It checks for updates in the strategy repository and restarts the bot container if updates are found.
-#
-# Example setup:
-# 1. Place `run_bot.py` in the `NostalgiaForInfinity` folder.
-# 2. Ensure a valid `.env` file exists in the same directory.
-# 3. Execute the script manually: python run_bot.py
-# 4. To automate execution, add the script to `crontab`. For example, to run every hour:
-#    0 * * * * /usr/bin/python3 /path/to/NostalgiaForInfinity/run_bot.py
-#
-# This will check for updates every hour and restart the bot if updates are found.
-
 import os
 import subprocess
 import sys
@@ -21,6 +8,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 STRAT_DIR = SCRIPT_DIR  # Assuming the script is in the root of NostalgiaForInfinity
 LOG_FILE = os.path.join(SCRIPT_DIR, "run_bot.log")
 
+
 def log_message(message):
     """Log message to console and a log file."""
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -28,6 +16,26 @@ def log_message(message):
     print(log_entry)
     with open(LOG_FILE, "a") as log_file:
         log_file.write(log_entry + "\n")
+
+
+def check_dependency(command, name):
+    """Check if a required command is available on the system."""
+    try:
+        subprocess.run([command, "--version"], check=True, text=True, capture_output=True)
+        log_message(f"Dependency '{name}' is installed.")
+    except FileNotFoundError:
+        log_message(f"Error: Dependency '{name}' is not installed. Please install it and try again.")
+        sys.exit(1)
+
+
+def check_dependencies():
+    """Check if all required dependencies are installed."""
+    dependencies = [
+        ("git", "Git"),
+        ("docker", "Docker"),
+    ]
+    for command, name in dependencies:
+        check_dependency(command, name)
 
 
 def check_branch_status():
@@ -110,6 +118,7 @@ def is_docker_running():
 def main():
     log_message("Starting update process...")
 
+    check_dependencies()
     check_env_file()
 
     update_needed = check_strategy_update()
