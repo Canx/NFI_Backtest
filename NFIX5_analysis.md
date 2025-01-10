@@ -851,417 +851,552 @@ The goal of "grind mode" is to improve the chances of making a profit when the a
 
 In summary, "grind mode" in NostalgiaForInfinityX5 is an aggressive strategy aimed at leveraging price drops to accumulate a position at a lower average cost. By increasing the position during market weakness, "grind mode" seeks to maximize potential profits when the price reverses.
 
-### Grind buy signal 1 (gd1)
+### Explanation of Grinding Levels: GD1 (Grinding Level 1)
+
+**Grinding Level 1 (GD1)** is the first and foundational level of the grinding logic. This level is designed to rebalance and optimize a trade's position when specific market conditions are met. Here's a detailed breakdown of how GD1 operates:
+
+---
+
+### **1. Conditions for GD1 Activation**
+GD1 is triggered based on several factors:
+- **Profitability Thresholds:** The function checks if the trade's profitability is within a specific range.
+  - For example, if the distance ratio (difference between current price and the last entry price) falls below the threshold defined for GD1, a rebuy is considered.
+- **Market Timing:**
+  - No recent trades: Ensures that enough time has passed since the last entry or exit to avoid overtrading.
+  - A significant drop in price (`slice_profit < -0.02`): Indicates a potential opportunity to rebuy at a lower price.
+- **Mode Dependency:**
+  - It may activate in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the strategy’s state.
+
+---
+
+### **2. Actions Taken in GD1**
+GD1 allows for both **buying** and **selling**, depending on market conditions.
+
+#### **Buy Action**
+- **Purpose:** Increase the trade size when prices drop to take advantage of lower prices.
+- **Buy Amount Calculation:**
+  - Proportional to the base trade size (`slice_amount`), multiplied by a GD1-specific stake multiplier.
+  - Adjusted for leverage if the trade is in futures mode.
+  - Ensures the buy amount is greater than the minimum stake and doesn’t exceed the maximum allowed stake.
+- **Market Indicators for Entry:**
+  - The function evaluates indicators like RSI, Aroon, and moving averages to confirm entry opportunities.
+- **Logging and Tagging:** Creates logs and tags the order as `gd1` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position if profitability targets are reached.
+- **Sell Amount Calculation:**
+  - Based on the total amount held at GD1 and adjusted for leverage.
+  - Ensures the remaining stake does not fall below the minimum required size.
+- **Profit Thresholds:**
+  - The function uses thresholds specific to GD1 to determine when it is profitable to sell.
+  - These thresholds include fees (`fee_open_rate`, `fee_close_rate`) to ensure net profitability.
+- **Logging and Tagging:** Logs the action and tags the sell order as `gd1`.
+
+---
+
+### **3. Differences Specific to GD1**
+- **Entry Level Thresholds:** 
+  - GD1 has the most lenient thresholds for triggering rebuys compared to higher levels (GD2–GD6).
+  - This is because GD1 aims to capitalize on the earliest opportunities during a grinding phase.
+- **Multiplier:** The stake multiplier for GD1 is specific to this level and ensures controlled risk during the initial rebuy.
+- **Sub-Grinds:** GD1 supports multiple sub-grinds, meaning it can trigger additional entries within its scope until the maximum sub-grind count is reached.
+
+---
+
+### **4. Risk Mitigation in GD1**
+- **Minimum Stake Enforcement:** Ensures that the position size does not drop below a manageable level.
+- **Exit Prioritization:** If profitability is uncertain, GD1 prioritizes exiting the position to avoid unnecessary risk.
+
+---
+
+### Summary
+GD1 is the initial step in the grinding strategy, focusing on **controlled risk**, **early opportunities**, and **incremental adjustments** to the position. It sets the stage for higher levels (GD2–GD6), which progressively tighten thresholds and adjust stake sizes for more refined rebalancing.
+
+### Explanation of Grinding Levels: GD2 (Grinding Level 2)
+
+**Grinding Level 2 (GD2)** builds upon the logic of GD1, introducing slightly stricter conditions and refinements for adjusting trade positions. GD2 operates as the second layer in the grinding strategy, progressively optimizing the trade by addressing market conditions that require additional rebalancing or profit-taking.
+
+---
+
+### **1. Conditions for GD2 Activation**
+GD2 is triggered under the following circumstances:
+- **Distance Ratio and Profit Thresholds:**
+  - The price distance from the last entry (distance ratio) must fall below the predefined threshold specific to GD2.
+  - GD2 thresholds are generally more conservative than GD1, reflecting the strategy's aim to reduce risk as the position evolves.
+- **Timing Constraints:**
+  - A minimum time gap since the last entry or exit is enforced (e.g., at least 10 minutes).
+  - For market corrections or significant drops (`slice_profit < -0.02`), GD2 considers opportunities to rebuy.
+- **Mode Sensitivity:**
+  - GD2 can operate in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the trade's context.
+  - It is more selective in de-risking compared to GD1.
+
+---
+
+### **2. Actions Taken in GD2**
+GD2 supports both **buying** and **selling** actions, similar to GD1, but with distinct thresholds and calculations.
+
+#### **Buy Action**
+- **Purpose:** Add to the position when the market moves in a favorable direction, within the constraints of GD2-specific thresholds.
+- **Buy Amount Calculation:**
+  - Uses the base slice amount (`slice_amount`) multiplied by the GD2 stake multiplier.
+  - Adjusted for leverage in futures mode.
+  - Ensures the buy amount is:
+    - Greater than the minimum stake.
+    - Less than the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - GD2 may apply stricter conditions for indicators like RSI, Aroon, or moving averages.
+  - These ensure that the rebuy aligns with refined market signals compared to GD1.
+- **Logging and Tagging:** Logs the buy action with a `gd2` tag for tracking purposes.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position when profit targets for GD2 are achieved.
+- **Sell Amount Calculation:**
+  - Based on the total position size at GD2 and adjusted for leverage.
+  - Ensures that the remaining position size does not fall below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD2 uses tighter profit thresholds than GD1, accounting for both entry and exit fees (`fee_open_rate` and `fee_close_rate`).
+  - Only executes a sell if the net profit exceeds the required threshold.
+- **Logging and Tagging:** Logs the action and tags the sell order as `gd2`.
+
+---
+
+### **3. Differences Specific to GD2**
+- **Stricter Thresholds:** 
+  - GD2 introduces more stringent distance ratio and profitability requirements compared to GD1.
+  - This reflects the need for greater precision in later grinding stages.
+- **Lower Multiplier:** The GD2 stake multiplier may be smaller than GD1, reflecting reduced risk tolerance as the grinding process progresses.
+- **Sub-Grind Opportunities:** Similar to GD1, GD2 supports multiple sub-grinds, enabling additional entries within the GD2 level until the maximum sub-grind count is reached.
+
+---
+
+### **4. Risk Mitigation in GD2**
+- **Progressive De-Risking:** GD2 focuses more on de-risking than GD1, especially if market conditions show prolonged unfavorable trends.
+- **Minimum Stake Enforcement:** Ensures that any adjustment leaves the trade above the minimum manageable position size.
+- **Exit Over Rebuy:** If profit thresholds are uncertain, GD2 prioritizes selling over buying to avoid overexposure.
+
+---
+
+### **5. GD2 as a Transition Point**
+GD2 acts as a transition phase in the grinding strategy:
+- It refines the trade by responding to more precise market movements.
+- Sets the stage for the higher grinding levels (GD3–GD6), which implement even stricter thresholds and risk management rules.
+
+---
+
+### Summary
+GD2 introduces **enhanced selectivity**, **risk reduction**, and **refined thresholds** compared to GD1. It ensures that grinding continues in a controlled manner, balancing opportunities for profit with risk management.
+
+### Explanation of Grinding Levels: GD3 (Grinding Level 3)
+
+**Grinding Level 3 (GD3)** is the third tier in the grinding strategy. At this level, the conditions become even more restrictive compared to GD2, emphasizing risk mitigation and ensuring that trades align closely with the strategy's profitability and safety objectives.
+
+---
+
+### **1. Conditions for GD3 Activation**
+GD3 triggers when:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry (distance ratio) must fall below the stricter GD3-specific threshold.
+  - This threshold ensures that entries or adjustments are only made when the market signals strong alignment with the strategy.
+- **Timing Constraints:**
+  - GD3 enforces slightly longer time gaps compared to GD2 between successive entries or exits (e.g., minimum 10 minutes since the last entry and 2 hours for significant market corrections).
+- **Market Signals:**
+  - The market must show consistent alignment with grind-specific indicators (e.g., RSI, Aroon, EMA).
+  - A significant price drop (`slice_profit < -0.03`) or other predefined conditions must justify adjustments.
+- **Mode Sensitivity:**
+  - GD3 operates selectively in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the trade's context and broader market conditions.
+
+---
+
+### **2. Actions Taken in GD3**
+Like the previous levels, GD3 allows for **buying** and **selling** actions but with tighter controls.
+
+#### **Buy Action**
+- **Purpose:** Add to the position if market conditions meet the stricter GD3 criteria.
+- **Buy Amount Calculation:**
+  - Based on the base slice amount (`slice_amount`) multiplied by the GD3-specific stake multiplier.
+  - Adjusted for leverage in futures trading.
+  - Ensures the buy amount:
+    - Exceeds the minimum stake requirement.
+    - Does not surpass the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - GD3 relies on more robust market signals, such as:
+    - **Lower RSI thresholds:** Indicating oversold conditions.
+    - **Aroon Indicator:** Suggesting trend exhaustion.
+    - **EMA Levels:** Confirming strong support levels.
+- **Logging and Tagging:** Tags the order as `gd3` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position if profitability thresholds specific to GD3 are reached.
+- **Sell Amount Calculation:**
+  - Determined based on the GD3 position size and adjusted for leverage.
+  - Ensures the remaining position does not drop below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD3 uses more conservative profit thresholds than GD2 to reflect the level’s increased focus on risk reduction.
+  - Accounts for fees (`fee_open_rate` and `fee_close_rate`) to ensure net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd3`.
+
+---
+
+### **3. Differences Specific to GD3**
+- **Stricter Profitability Criteria:**
+  - GD3 requires higher confidence in profitability before allowing buys or sells.
+- **Lower Multiplier:** The GD3 stake multiplier is smaller than GD2, reflecting the need for tighter risk control at this stage.
+- **Sub-Grinds:** GD3 permits additional entries within its scope, but the maximum sub-grind count for GD3 is typically lower than GD1 or GD2.
+
+---
+
+### **4. Risk Mitigation in GD3**
+- **Selective Entry:** Only executes trades under strong market alignment, reducing unnecessary exposure.
+- **Focus on Safety:** De-risking takes priority over aggressive profit-seeking.
+- **Minimum Stake Enforcement:** Ensures that the position size remains above the minimum manageable level.
+
+---
+
+### **5. GD3 as a Refinement Stage**
+GD3 is a refinement stage in the grinding strategy:
+- It acts as a filter, ensuring that only high-probability opportunities are acted upon.
+- Sets the groundwork for the more restrictive grinding levels (GD4–GD6), which focus heavily on risk mitigation and controlled position adjustments.
+
+---
+
+### Summary
+GD3 is designed for **controlled rebalancing**, **selective adjustments**, and **risk mitigation**. It introduces stricter thresholds and prioritizes safety over profit-seeking, ensuring that the strategy remains resilient during volatile market conditions.
+
+### Explanation of Grinding Levels: GD4 (Grinding Level 4)
+
+**Grinding Level 4 (GD4)** introduces even stricter criteria than GD3, focusing heavily on **risk management** and **precise adjustments**. GD4 is part of the advanced stages of grinding, aimed at carefully optimizing trades while minimizing exposure to adverse market conditions.
+
+---
+
+### **1. Conditions for GD4 Activation**
+GD4 is triggered under specific, highly selective conditions:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry (distance ratio) must meet the stricter GD4-specific thresholds.
+  - GD4’s thresholds are designed to ensure that only the most favorable market opportunities are acted upon.
+- **Timing Requirements:**
+  - Longer time gaps between trades compared to GD3 (e.g., 2+ hours since the last significant adjustment).
+  - Ensures sufficient time for market patterns to develop before taking further action.
+- **Market Signals:**
+  - Strong alignment with grind-specific indicators is required.
+  - Additional indicators, such as higher timeframe moving averages or trend strength, may be considered to confirm the market's direction.
+- **Mode Sensitivity:**
+  - GD4 operates in **grind mode**, **de-risk mode**, or **recovery mode**, but with a primary focus on **de-risking** the trade.
+
+---
+
+### **2. Actions Taken in GD4**
+GD4 enables both **buying** and **selling** actions, but these are even more selective than in GD3.
+
+#### **Buy Action**
+- **Purpose:** Add to the position in scenarios where the market provides highly favorable conditions.
+- **Buy Amount Calculation:**
+  - The base slice amount (`slice_amount`) is multiplied by the GD4-specific stake multiplier.
+  - Adjusted for leverage if the trade is in futures mode.
+  - Buy amount:
+    - Must exceed the minimum stake requirement.
+    - Cannot exceed the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - **RSI:** Oversold conditions must be confirmed, with additional constraints like divergence with price action.
+  - **EMA Alignment:** Prices must be near key support levels defined by exponential moving averages.
+  - **Volume and Volatility Analysis:** Lower volatility or high volume spikes may be required to trigger a GD4 entry.
+- **Logging and Tagging:** Logs the buy action with a `gd4` tag for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position when profitability thresholds for GD4 are reached.
+- **Sell Amount Calculation:**
+  - Based on the total GD4-specific position size and adjusted for leverage.
+  - Ensures the remaining stake does not drop below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD4 has stricter profit thresholds than GD3, ensuring only highly profitable exits are executed.
+  - Fees (`fee_open_rate`, `fee_close_rate`) are accounted for to ensure net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd4`.
+
+---
+
+### **3. Differences Specific to GD4**
+- **Tighter Risk Controls:** 
+  - GD4 prioritizes safety and only takes actions with high confidence.
+  - Position adjustments are smaller and more controlled compared to GD1–GD3.
+- **Selective Entry Criteria:**
+  - GD4’s conditions require multiple market indicators to align, significantly reducing the frequency of adjustments.
+- **Fewer Sub-Grinds:** The maximum sub-grind count for GD4 is lower than for GD1–GD3, reflecting its focus on precision over quantity.
+
+---
+
+### **4. Risk Mitigation in GD4**
+- **De-Risking Priority:** GD4 emphasizes reducing exposure when conditions are less favorable, even at the expense of lower profitability.
+- **Minimum Stake Enforcement:** Maintains a manageable position size to prevent overexposure.
+- **Controlled Adjustments:** Ensures that any rebuy or sell action aligns with both profitability and risk reduction goals.
+
+---
+
+### **5. GD4 as a Precision Stage**
+GD4 represents a **fine-tuning stage** in the grinding strategy:
+- It avoids unnecessary adjustments unless there is strong evidence of market alignment.
+- GD4 sets the groundwork for GD5 and GD6, which adopt even more conservative approaches.
+
+---
+
+### Summary
+GD4 is a **precision-driven grinding level** that balances the need for profitability with an increased emphasis on risk management. Its stricter conditions ensure that trades are adjusted only under optimal circumstances, reflecting the advanced stage of the grinding process.
+
+
+### Explanation of Grinding Levels: GD5 (Grinding Level 5)
+
+**Grinding Level 5 (GD5)** is the penultimate level in the grinding strategy. At this stage, the conditions are extremely restrictive, prioritizing **risk minimization** and ensuring that any adjustments to the trade are highly selective. GD5 focuses heavily on **profit preservation** and **strategic de-risking**, making it a critical stage in the advanced grinding process.
+
+---
+
+### **1. Conditions for GD5 Activation**
+GD5 activation depends on highly specific and cautious conditions:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry must meet even stricter thresholds than GD4.
+  - These thresholds are designed to only allow adjustments in exceptional scenarios that align with the strategy's overall objectives.
+- **Timing Requirements:**
+  - GD5 enforces longer cooldown periods between trades compared to GD4 (e.g., several hours or more since the last adjustment).
+  - This ensures the market has had sufficient time to stabilize or confirm a trend.
+- **Market Signals:**
+  - Requires strong and clear alignment with grind-specific indicators, such as:
+    - RSI levels indicating extreme oversold or overbought conditions.
+    - EMA and volume trends that confirm robust support or resistance levels.
+  - Additional confirmations from higher timeframe indicators may also be required.
+- **Mode Sensitivity:**
+  - GD5 primarily operates in **de-risk mode** or **recovery mode**, with grind mode playing a secondary role.
+  - The focus is on preserving capital and carefully managing exposure.
+
+---
+
+### **2. Actions Taken in GD5**
+GD5 permits **buying** and **selling** actions, but with even greater caution and precision than GD4.
+
+#### **Buy Action**
+- **Purpose:** Add to the position in rare scenarios where the market provides exceptional opportunities.
+- **Buy Amount Calculation:**
+  - The base slice amount (`slice_amount`) is multiplied by the GD5-specific stake multiplier.
+  - Adjusted for leverage in futures mode.
+  - The calculated buy amount:
+    - Must exceed the minimum stake threshold.
+    - Must remain well below the maximum allowable stake, ensuring no excessive exposure.
+- **Market Indicators for Entry:**
+  - GD5 evaluates a combination of advanced market signals:
+    - **RSI Divergence:** Strong divergence between price action and RSI is required.
+    - **EMA Alignment:** The price must be near or bouncing off critical long-term EMA levels.
+    - **Volatility Analysis:** Low volatility conditions combined with clear directional trends.
+- **Logging and Tagging:** The action is tagged as `gd5` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part or all of the position when GD5 profit thresholds are reached, prioritizing risk reduction.
+- **Sell Amount Calculation:**
+  - Determined based on the GD5-specific position size, adjusted for leverage.
+  - Ensures the remaining stake does not drop below the minimum threshold.
+- **Profit Thresholds:**
+  - GD5 has stricter profit thresholds than GD4, ensuring only significant gains trigger exits.
+  - Fees (`fee_open_rate` and `fee_close_rate`) are included to guarantee net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd5`.
+
+---
+
+### **3. Differences Specific to GD5**
+- **Extreme Selectivity:**
+  - GD5 has the most restrictive entry conditions among the grinding levels so far.
+  - Adjustments are rare and only occur in highly favorable scenarios.
+- **Smaller Adjustments:**
+  - The GD5 stake multiplier is significantly lower than earlier levels, reflecting the need for minimal risk at this stage.
+- **Few Sub-Grinds:**
+  - GD5 supports only a minimal number of sub-grinds, ensuring limited re-entry opportunities.
+
+---
+
+### **4. Risk Mitigation in GD5**
+- **De-Risking Priority:**
+  - GD5 focuses heavily on reducing exposure, especially in uncertain or volatile markets.
+  - De-risking takes precedence over seeking new opportunities.
+- **Capital Preservation:**
+  - Ensures that the strategy minimizes potential losses while securing profits from earlier grinding levels.
+- **Minimum Stake Enforcement:**
+  - Maintains a manageable position size, preventing over-leveraging or overexposure.
+
+---
+
+### **5. GD5 as a Capital Preservation Stage**
+GD5 represents the **penultimate step** in the grinding strategy:
+- It prioritizes **precision** and **risk aversion**, ensuring only the best opportunities are acted upon.
+- It serves as a preparatory phase for GD6, which adopts the strictest conditions for trade adjustments.
+
+---
+
+### Summary
+GD5 is a **highly selective and risk-averse stage** in the grinding process, emphasizing **capital preservation**, **strategic de-risking**, and **precision adjustments**. Its strict thresholds and conservative approach ensure that trades remain resilient in volatile market conditions.
+
+### Explanation of Grinding Levels: GD6 (Grinding Level 6)
+
+**Grinding Level 6 (GD6)** is the final and most conservative level in the grinding strategy. It is designed to make adjustments only under the most extreme and favorable conditions, with an emphasis on **capital protection**, **de-risking**, and **closing out positions** if profitability targets or safety thresholds are met. GD6 serves as the ultimate safety net in the grinding process.
+
+---
+
+### **1. Conditions for GD6 Activation**
+GD6 activation occurs only when:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry must satisfy the most restrictive threshold in the grinding strategy.
+  - These thresholds are calibrated to ensure GD6 operates only in exceptional scenarios.
+- **Timing Constraints:**
+  - GD6 enforces the longest cooldown periods between trades, often requiring multiple hours or significant market movements since the last adjustment.
+- **Market Signals:**
+  - Requires the strongest confirmations from grind-specific and broader market indicators, including:
+    - RSI, Aroon, EMA, and volume trends.
+    - Potential confluence with higher timeframe support/resistance levels.
+    - Indicators of market exhaustion or reversal.
+- **Mode Sensitivity:**
+  - GD6 is heavily oriented towards **de-risk mode** and **recovery mode**, with grind mode having a minimal role.
+  - The focus is on **exiting the position safely** rather than seeking additional opportunities.
+
+---
+
+### **2. Actions Taken in GD6**
+GD6 supports both **buying** and **selling**, but its operations are highly restrictive and focused on capital preservation.
+
+#### **Buy Action**
+- **Purpose:** Make minimal additions to the position only if market conditions are extraordinarily favorable.
+- **Buy Amount Calculation:**
+  - Uses the base slice amount (`slice_amount`) multiplied by the GD6-specific stake multiplier, which is the smallest across all grinding levels.
+  - Adjusted for leverage in futures mode.
+  - Ensures the buy amount:
+    - Exceeds the minimum stake requirement.
+    - Remains well below the maximum allowable stake, maintaining a conservative position.
+- **Market Indicators for Entry:**
+  - Requires extreme oversold conditions or other significant indicators of market reversal.
+  - Indicators must align across multiple timeframes to ensure robust entry signals.
+- **Logging and Tagging:** Tags the action as `gd6` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit the position entirely or partially when GD6 profit thresholds or safety conditions are met.
+- **Sell Amount Calculation:**
+  - Calculated based on the total GD6-specific position size and adjusted for leverage.
+  - Ensures that any remaining stake meets the minimum threshold if the position is not entirely closed.
+- **Profit Thresholds:**
+  - GD6 has the strictest profit thresholds, requiring significant gains before executing a sell.
+  - Fees (`fee_open_rate` and `fee_close_rate`) are accounted for, ensuring only net profitability triggers an exit.
+- **Logging and Tagging:** Logs the action and tags the order as `gd6`.
+
+---
+
+### **3. Differences Specific to GD6**
+- **Maximum Selectivity:**
+  - GD6 operates with the most restrictive conditions, making adjustments only in scenarios of extreme confidence.
+- **Minimal Adjustments:**
+  - The GD6 stake multiplier is the smallest, reflecting the need for absolute risk control.
+- **Single Sub-Grind:** GD6 typically allows only one or very few sub-grinds, minimizing re-entry opportunities.
+
+---
+
+### **4. Risk Mitigation in GD6**
+- **De-Risking as Priority:** 
+  - GD6 focuses almost exclusively on exiting positions safely, reducing exposure to market volatility.
+- **Capital Preservation:**
+  - Ensures that any adjustments prioritize protecting the trader's capital rather than chasing incremental gains.
+- **Minimum Stake Enforcement:**
+  - Maintains a manageable position size, even for the final grinding level.
+
+---
+
+### **5. GD6 as a Final Safety Stage**
+GD6 represents the **last line of defense** in the grinding strategy:
+- It avoids aggressive adjustments, focusing solely on **safe exits** or minimal re-entries in highly favorable conditions.
+- It serves as the strategy's "endgame," ensuring trades are closed with maximum safety and profitability.
+
+---
+
+### Summary
+GD6 is the **most conservative and risk-averse stage** in the grinding strategy. It focuses on **capital protection**, **strategic exits**, and **minimal adjustments** to ensure the safety of the trader's capital. This level is used sparingly and only in the most exceptional market conditions.
+
+### Summary of Grinding Levels (GD1–GD6)
+
+The **Grinding Levels** (GD1–GD6) in the strategy represent a structured approach to dynamically adjusting trade positions based on market conditions. Each level progressively tightens its conditions and priorities, transitioning from opportunistic profit-seeking (GD1) to maximum capital preservation (GD6).
+
+---
+
+### **GD1: Initial Opportunity Level**
+- **Purpose:** 
+  - Take advantage of early opportunities in a grinding phase.
+- **Key Features:**
+  - Lenient thresholds for rebuys and adjustments.
+  - Larger stake multipliers to capitalize on early favorable market conditions.
+  - Higher frequency of adjustments.
+- **Focus:** Growth-oriented, prioritizing profit opportunities.
+
+---
+
+### **GD2: Refinement Level**
+- **Purpose:** 
+  - Refine trade adjustments by introducing tighter thresholds.
+- **Key Features:**
+  - Slightly stricter distance ratios and profitability requirements.
+  - Reduced stake multipliers to manage risk more cautiously.
+  - Focus on selective opportunities compared to GD1.
+- **Focus:** Balanced between profit-seeking and risk management.
+
+---
+
+### **GD3: Controlled Risk Level**
+- **Purpose:** 
+  - Tighten control over trade adjustments as the grinding phase matures.
+- **Key Features:**
+  - Strict entry and exit criteria.
+  - Further reduced stake multipliers and limited sub-grinds.
+  - Emphasis on aligning adjustments with robust market signals (e.g., RSI, EMA).
+- **Focus:** Shift toward controlled risk and selective profit-taking.
+
+---
+
+### **GD4: Precision Level**
+- **Purpose:** 
+  - Implement precise adjustments under highly favorable market conditions.
+- **Key Features:**
+  - Even stricter thresholds for profitability and distance ratios.
+  - Minimal stake adjustments and fewer sub-grinds allowed.
+  - Heavy reliance on higher timeframe confirmations and confluence.
+- **Focus:** Prioritize capital safety with occasional precision adjustments.
+
+---
+
+### **GD5: Advanced Risk Control**
+- **Purpose:** 
+  - Focus on risk minimization and capital preservation.
+- **Key Features:**
+  - Extremely conservative thresholds and smaller stake multipliers.
+  - Rare adjustments, limited to scenarios of exceptional market alignment.
+  - De-risking takes precedence over profit-seeking.
+- **Focus:** Reduce exposure while preserving existing gains.
+
+---
+
+### **GD6: Final Safety Stage**
+- **Purpose:** 
+  - Provide a last line of defense for the trade, focusing on safe exits.
+- **Key Features:**
+  - The strictest conditions and the smallest stake multipliers.
+  - Minimal adjustments; primarily used for closing out positions.
+  - Heavy focus on capital preservation and avoiding overexposure.
+- **Focus:** Strategic exits and maximum safety.
+
+---
+
+### **Key Progression Across Levels**
+- **Risk Tolerance:** Decreases progressively from GD1 to GD6.
+- **Profit Thresholds:** Tighten at each level, requiring greater confidence in profitability.
+- **Stake Multipliers:** Reduce with each level to limit risk exposure.
+- **Frequency of Adjustments:** Drops significantly, with GD6 allowing the fewest adjustments.
+- **Focus Transition:**
+  - **GD1–GD3:** Balance between profit-seeking and risk management.
+  - **GD4–GD6:** Heavy emphasis on risk control and capital preservation.
+
+---
+
+### **How GD Levels Work Together**
+- **Layered Strategy:** The grinding levels create a multi-layered approach that adapts to market conditions dynamically.
+- **Early Aggression, Later Precision:** Early levels (GD1–GD3) exploit opportunities, while later levels (GD4–GD6) focus on safety and strategic exits.
+- **Flexible Adjustments:** Each level responds to market changes based on predefined thresholds, ensuring the strategy remains adaptive.
 
-1. **Initial Restrictions**:
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active operations (sub grind) must be less than the maximum allowed: `grind_1_sub_grind_count < grind_1_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following scenarios must apply:
-     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation.
-     - The strategy is in "derisk" mode, and this is the first sub operation.
-     - Grind mode is enabled, and this is the first sub operation.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated profit is greater than 6%.
-
-5. **Short Grind Entry Condition**:
-   - The entry must be categorized as a short grind entry: `is_short_grind_entry`.
-
-
-#### Detailed Analysis
-
-1. **Focus on Profitability**:
-   Unlike **Grinding 6 (GD6)**, which includes loss thresholds to limit entry during losses, GD1 emphasizes profitability. Conditions like `slice_profit > 0.02` and `slice_profit > 0.06` ensure that the strategy enters only when there is evidence of positive returns.
-
-2. **Risk Management Through Time**:
-   By spacing out entries (at least 10 minutes between entries and 2-6 hours between filled orders depending on the conditions), GD1 mitigates the risk of over-trading.
-
-3. **Dependence on Context and Entry Type**:
-   The condition `is_short_grind_entry` enforces that only specific short-grind setups qualify for entry, likely tied to the broader strategy's rules.
-
-4. **Flexibility for Sub Operations**:
-   The logic accounts for varying thresholds for different sub grind operations (`grind_1_sub_thresholds`), providing flexibility to manage entries based on the number of sub operations already active.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Dynamic Profit Thresholds**:
-   - The static profit thresholds (`0.02` and `0.06`) could be adapted dynamically based on market volatility or recent performance.
-
-2. **Indicator-Based Conditions**:
-   - Unlike GD6, GD1 lacks technical indicator checks (e.g., RSI, EMA). Adding these could provide additional confirmation for entries, especially for short grind entries.
-
-3. **Modularity and Readability**:
-   - Breaking the logic into smaller functions could make it easier to debug, update, and maintain.
-
-4. **Testing Under Different Market Conditions**:
-   - Ensure the strategy performs well in trending, ranging, and volatile markets to validate the robustness of these conditions.
-
-### Grind buy signal 2 (gd2)
-
-1. **Initial Restrictions**:
-   - Order tags must exist: `has_order_tags`.
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_2_sub_grind_count < grind_2_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following scenarios must apply:
-     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_2_distance_ratio < grind_2_sub_thresholds[grind_2_sub_grind_count]`.
-     - The strategy is in "derisk" mode, and this is the first sub operation.
-     - Grind mode is enabled, and this is the first sub operation.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated profit is greater than 6%.
-
-5. **Short Grind Entry Condition**:
-   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
-
-#### Detailed Analysis
-
-1. **Profit-Oriented Logic**:
-   - Like **GD1**, GD2 focuses on profitability by including conditions such as `slice_profit > 0.02` and `slice_profit > 0.06`. These ensure the strategy enters positions only when there is evidence of positive returns.
-
-2. **Time-Based Entry Spacing**:
-   - Conditions such as `current_time - timedelta(minutes=10)` and `current_time - timedelta(hours=2)` ensure that entries are spaced apart, preventing over-trading.
-
-3. **Flexibility for Sub Operations**:
-   - The condition `grind_2_sub_thresholds` provides flexibility by setting thresholds that vary based on the number of sub operations already active. This allows for nuanced handling of entries based on the strategy's current position in the market.
-
-4. **Risk and Context Management**:
-   - By incorporating `is_derisk` and `is_derisk_calc`, the strategy accounts for risk-reducing scenarios, especially for the first sub operation.
-
-5. **Dependence on Short Grind Entries**:
-   - The condition `is_short_grind_entry` ensures that only specific setups designed for short grind entries are considered, maintaining consistency with the overall strategy's framework.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Dynamic Profit and Distance Thresholds**:
-   - Consider adjusting the profit thresholds (`0.02` and `0.06`) and distance ratio dynamically based on market conditions (e.g., volatility or recent performance).
-
-2. **Incorporating Technical Indicators**:
-   - Unlike **GD6**, which includes indicators like RSI and EMA for additional confirmation, GD2 relies solely on thresholds and profitability metrics. Adding technical indicators could improve the precision of entries.
-
-3. **Code Modularity**:
-   - Breaking this logic into smaller, reusable functions could make the code more maintainable and easier to debug.
-
-4. **Performance Testing**:
-   - Test the strategy across various market conditions (e.g., trending, ranging, and volatile markets) to ensure robustness.
-
-
-#### Comparison to GD1
-
-The logic for **GD2** is very similar to **GD1**, focusing on profitability and time-based restrictions. However, **GD2** includes an additional condition requiring order tags (`has_order_tags`). Both strategies share an emphasis on positive slice profit, but neither includes technical indicators as seen in **GD6**.
-
-### Grind buy signal 3 (gd3)
-
-1. **Initial Restrictions**:
-   - Order tags must exist: `has_order_tags`.
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_3_sub_grind_count < grind_3_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following scenarios must apply:
-     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_3_distance_ratio < grind_3_sub_thresholds[grind_3_sub_grind_count]`.
-     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
-     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated profit is greater than 6%.
-
-5. **Short Grind Entry Condition**:
-   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
-
-
-#### Detailed Analysis
-
-1. **Profit-Oriented Logic**:
-   - Similar to **GD1** and **GD2**, GD3 focuses on profitability by requiring conditions such as `slice_profit > 0.02` and `slice_profit > 0.06`. These thresholds ensure the strategy enters only when positive returns are evident.
-
-2. **Time-Based Entry Spacing**:
-   - Conditions like `current_time - timedelta(minutes=10)` and `current_time - timedelta(hours=2)` ensure that entries are spaced apart to prevent over-trading.
-
-3. **Flexibility for Sub Operations**:
-   - The condition `grind_3_sub_thresholds` allows for dynamic handling of sub operations by setting thresholds that vary based on the number of active sub operations.
-
-4. **Risk and Context Management**:
-   - By incorporating `is_derisk` and `is_derisk_calc`, the strategy ensures proper handling of risk-reduction scenarios for initial sub operations.
-
-5. **Dependence on Short Grind Entries**:
-   - The condition `is_short_grind_entry` ensures consistency with the broader strategy by limiting entries to setups designed for short grinds.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Dynamic Profit and Distance Thresholds**:
-   - The profit thresholds (`0.02` and `0.06`) and distance ratio could be dynamically adjusted based on market volatility or recent performance.
-
-2. **Addition of Technical Indicators**:
-   - Unlike **GD6**, GD3 does not utilize technical indicators such as RSI or EMA. Adding these could enhance precision and alignment with market conditions.
-
-3. **Modularity**:
-   - Breaking this logic into smaller, reusable functions would improve maintainability and make debugging easier.
-
-4. **Performance Testing**:
-   - Testing the strategy under different market conditions (e.g., trending, ranging, and volatile markets) would help validate its robustness and adaptability.
-
-
-#### Comparison to Other Grinding Strategies
-
-- **Similarity to GD1 and GD2**:
-  - GD3 shares a focus on profitability and similar timing conditions for entries. All three strategies emphasize slice profit thresholds and rely on `is_short_grind_entry` as a critical condition.
-
-- **Differences from GD6**:
-  - GD3 does not incorporate technical indicators like RSI or EMA, which are used in GD6 to refine entries further.
-
-
-### Grind buy signal 4 (gd6)
-
-1. **Initial Restrictions**:
-   - Order tags must exist: `has_order_tags`.
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_4_sub_grind_count < grind_4_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following scenarios must apply:
-     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_4_distance_ratio < grind_4_sub_thresholds[grind_4_sub_grind_count]`.
-     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
-     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated profit is greater than 6%.
-
-5. **Enhanced Entry Conditions**:
-   - One of the following must apply:
-     - The entry qualifies as a short grind entry: `is_short_grind_entry`.
-     - Additional indicator-based conditions are met:
-       - Accumulated profit (`slice_profit`) is greater than 4%: `slice_profit > 0.04`.
-       - **RSI Conditions**:
-         - `RSI_14` is above 64.
-         - `RSI_3` across multiple timeframes (15m, 1h, and 4h) is below their respective thresholds (90 for shorter timeframes and 85 for longer ones).
-       - **AROON Conditions**:
-         - The AROOND_14 indicator is below 25.
-       - **Price Condition**:
-         - The current price is above 101.2% of the EMA_20: `last_candle["close"] > (last_candle["EMA_20"] * 1.012)`.
-
-
-#### Detailed Analysis
-
-1. **Profit-Oriented Logic**:
-   - GD4 incorporates profitability thresholds (`slice_profit > 0.02` and `slice_profit > 0.04`) to ensure entries are made in favorable conditions.
-
-2. **Technical Indicators for Confirmation**:
-   - Unlike GD1, GD2, and GD3, GD4 includes additional technical indicators to refine entries:
-     - RSI conditions favor overbought scenarios for potential reversals, balancing momentum and entry precision.
-     - AROOND_14 and EMA conditions ensure alignment with market trends.
-
-3. **Flexibility for Sub Operations**:
-   - As with other Grinding strategies, the use of thresholds for sub operations (`grind_4_sub_thresholds`) allows dynamic handling of entries based on the number of active sub operations.
-
-4. **Enhanced Risk and Entry Management**:
-   - By requiring specific RSI and price conditions for non-short grind entries, GD4 seeks to filter out low-probability setups.
-
-5. **Time-Based Entry Spacing**:
-   - The spacing conditions (`10 minutes` and `2-6 hours`) prevent over-trading and ensure more deliberate entry timing.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Dynamic Threshold Adjustments**:
-   - The static thresholds for slice profit and indicators could be dynamically adjusted based on market conditions, such as volatility or recent performance.
-
-2. **Refinement of RSI Conditions**:
-   - The RSI thresholds could be fine-tuned to consider different market phases (e.g., trending vs. ranging).
-
-3. **Enhanced Modularity**:
-   - Breaking the logic into modular functions for sub operations, time conditions, and indicator-based filtering would improve maintainability and readability.
-
-4. **Performance Monitoring**:
-   - Backtesting across diverse market conditions (e.g., trending, ranging, or volatile markets) would help validate the robustness and adaptability of the strategy.
-
-
-#### Comparison to Other Grinding Strategies
-
-- **Similarities**:
-  - GD4 shares foundational structures with GD1, GD2, and GD3, including sub-operation thresholds, slice profit conditions, and time-based restrictions.
-
-- **Key Differences**:
-  - **Indicator-Based Filters**: GD4 stands out by incorporating additional technical indicators (RSI, AROON, and EMA).
-  - **Stronger Profit Thresholds**: GD4 requires slice profit > 4% in certain conditions, compared to lower thresholds in other grinding strategies.
-
-### Grind buy signal 5 (gd5)
-
-1. **Initial Restrictions**:
-   - Order tags must exist: `has_order_tags`.
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active sub-operations (sub grind) must be less than the maximum allowed: `grind_5_sub_grind_count < grind_5_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following scenarios must apply:
-     - At least one sub operation already exists, and the negative distance ratio is below the configured threshold for the respective sub operation: `-grind_5_distance_ratio < grind_5_sub_thresholds[grind_5_sub_grind_count]`.
-     - The strategy is in "derisk" mode, and this is the first sub operation: `is_derisk or is_derisk_calc`.
-     - Grind mode is enabled, and this is the first sub operation: `is_grind_mode`.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated profit (slice profit) is greater than 2%: `slice_profit > 0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated profit is greater than 6%.
-
-5. **Short Grind Entry Condition**:
-   - The entry must qualify as a short grind entry: `is_short_grind_entry`.
-
-
-#### Detailed Analysis
-
-1. **Profit-Oriented Logic**:
-   - Like **GD1, GD2, and GD3**, GD5 incorporates profitability thresholds (`slice_profit > 0.02` and `slice_profit > 0.06`) to ensure entries occur under favorable conditions.
-
-2. **Time-Based Entry Spacing**:
-   - Time-based restrictions (`10 minutes` and `2-6 hours`) prevent frequent entries, ensuring the strategy does not overtrade and operates with sufficient spacing between orders.
-
-3. **Sub Operation Flexibility**:
-   - The use of sub-operation thresholds (`grind_5_sub_thresholds`) allows for adaptive handling of entries based on the number of active sub operations.
-
-4. **Risk and Context Management**:
-   - The inclusion of `is_derisk` and `is_derisk_calc` ensures that risk-reducing conditions are prioritized for the first sub operation.
-
-5. **Dependence on Short Grind Entries**:
-   - The condition `is_short_grind_entry` enforces alignment with the strategy’s focus, limiting entries to setups specifically designed for short grind scenarios.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Incorporating Technical Indicators**:
-   - Unlike **GD4**, GD5 lacks additional technical filters like RSI or EMA, which could improve precision and market alignment.
-
-2. **Dynamic Threshold Adjustments**:
-   - The fixed profit thresholds (`0.02` and `0.06`) and distance ratio could be dynamically adjusted based on market conditions (e.g., volatility or trend strength).
-
-3. **Code Modularity**:
-   - Breaking the logic into smaller functions (e.g., time-based conditions, sub operation thresholds, and profitability checks) would enhance readability and maintainability.
-
-4. **Performance Testing**:
-   - Backtesting across various market conditions (trending, ranging, and volatile markets) would help validate GD5's robustness and effectiveness.
-
-
-#### Comparison to Other Grinding Strategies
-
-- **Similarity to GD1, GD2, and GD3**:
-  - GD5 shares a focus on profitability and time-based restrictions. The structure and logic are largely consistent across these strategies.
-
-- **Difference from GD4**:
-  - GD4 incorporates additional technical indicators (RSI, AROON, and EMA), whereas GD5 relies on slice profit thresholds and short grind entries without technical filters.
-
-
-GD5 is a straightforward, profit-driven strategy similar to GD1-GD3, with a clear focus on managing sub operations and enforcing profitability conditions. However, it lacks the enhanced filtering provided by technical indicators (seen in GD4). 
-
-
-### Grind buy signal 6 (gd6)
-
-1. **Initial Restrictions**:
-   - Order tags must exist: `has_order_tags`.
-   - It must not be a partial sell: `not partial_sell`.
-   - The number of active operations (sub grind) must be less than the maximum allowed: `grind_6_sub_grind_count < grind_6_max_sub_grinds`.
-
-2. **Specific Context Conditions**:
-   - One of the following situations must apply:
-     - At least one sub operation already exists, and the current distance ratio is below the configured threshold.
-     - The strategy is in "derisk" mode, and this is the first sub operation.
-     - Grind mode is enabled, and this is the first sub operation.
-
-3. **Time Restrictions**:
-   - The last entry must have been filled more than 10 minutes ago: `current_time - timedelta(minutes=10) > filled_entries[-1].order_filled_utc`.
-   - The last filled order must meet at least one of these conditions:
-     - It was executed more than 2 hours ago.
-     - Accumulated loss (slice profit) is less than -2%: `slice_profit < -0.02`.
-
-4. **Restrictions on Open Grinds**:
-   - If no grinds are open, the operation can proceed.
-   - If grinds are open, at least one of these conditions must apply:
-     - The last order was filled more than 6 hours ago.
-     - Accumulated loss is less than -6%.
-
-5. **Conditions Based on Technical Indicators**:
-   - If it is a long grind entry (`is_long_grind_entry`), it is automatically allowed.
-   - If not, then:
-     - RSI_14 must be below 36.
-     - RSI_3 across multiple timeframes must be above 10 (1 minute, 15 minutes, 1 hour, and 4 hours).
-     - The AROONU_14 indicator must be below 25.
-     - The current price must be below 98.8% of the EMA_20.
-
-
-#### Detailed Analysis
-
-1. **Complex but Structured Logic**:
-   The logic is well-organized and uses combined logical operators to cover a wide range of situations. This ensures flexibility and control under different market conditions.
-
-2. **Reliance on Technical Indicators**:
-   Using multiple periods for RSI_3 and checking oversold levels (RSI_14 < 36 and AROONU_14 < 25) suggests that this strategy aims to identify opportunities in highly oversold markets.
-
-3. **Time-Based Restrictions**:
-   These limit entry frequency, avoiding over-trading and ensuring that entry decisions are spaced either by time or loss context.
-
-4. **Risk Management**:
-   The "slice_profit" conditions indicate a focus on limiting cumulative losses. Additionally, both distance ratios and custom thresholds for sub operations are taken into account.
-
-
-#### Potential Improvements or Adjustments
-
-1. **Modularity**:
-   Consider breaking these conditions into smaller functions to make the code easier to maintain and debug.
-
-2. **Dynamic Thresholds**:
-   Certain conditions, such as RSI values or percentages related to the EMA, could be adjusted dynamically based on volatility or general market conditions.
-
-3. **Performance Monitoring**:
-   It's essential to test how these conditions affect performance across different market environments (trending, ranging, high volatility, etc.).
-
-If you'd like, we can optimize the code or run backtests using historical data to validate its effectiveness.
 
 
 ## Rebuy Mode<a name="rebuy"></a>
