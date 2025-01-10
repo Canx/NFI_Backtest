@@ -743,6 +743,92 @@ TODO
 
 # Position adjustment modes
 
+## adjust_trade_position function
+
+The `adjust_trade_position` function in the **NostalgiaForInfinityX5** strategy of Freqtrade is responsible for dynamically adjusting the position of an ongoing trade based on specific conditions. Here's a breakdown of its functionality:
+
+### Overview
+This method is invoked to determine whether and how a trade's position should be adjusted, such as increasing the stake or modifying the strategy, depending on the trade's status, market conditions, and predefined rules. It supports both long and short positions and handles different trading modes like rebuy and grind modes.
+
+
+### Key Components
+
+#### **1. Position Adjustment Toggle**
+```python
+if self.position_adjustment_enable == False:
+    return None
+```
+- **Purpose:** If `position_adjustment_enable` is set to `False`, the function exits without making any changes.
+- **Effect:** This provides a global switch to enable or disable position adjustments.
+
+
+#### **2. Enter Tag Parsing**
+```python
+enter_tag = "empty"
+if hasattr(trade, "enter_tag") and trade.enter_tag is not None:
+    enter_tag = trade.enter_tag
+enter_tags = enter_tag.split()
+```
+- **Purpose:** The `enter_tag` is extracted from the `trade` object to determine the mode or strategy associated with the trade (e.g., rebuy, grind).
+- **Effect:** Tags are split into a list for easier matching against predefined mode-specific tags.
+
+
+#### **3. Rebuy Mode**
+```python
+if not trade.is_short and (
+    all(c in self.long_rebuy_mode_tags for c in enter_tags)
+    or (
+        any(c in self.long_rebuy_mode_tags for c in enter_tags)
+        and all(c in (self.long_rebuy_mode_tags + self.long_grind_mode_tags) for c in enter_tags)
+    )
+):
+    return self.long_rebuy_adjust_trade_position(...)
+```
+- **Purpose:** If the trade is a **long** position and matches specific `long_rebuy_mode_tags`, it triggers the `long_rebuy_adjust_trade_position` method.
+- **Effect:** Adjusts the trade by implementing the logic for the rebuy mode, which likely increases the position size to capitalize on favorable market conditions.
+
+
+#### **4. Grinding Mode (Long Trades)**
+```python
+elif not trade.is_short and (
+    any(c in (...) for c in enter_tags)
+    or not any(c in (...) for c in enter_tags)
+):
+    return self.long_grind_adjust_trade_position(...)
+```
+- **Purpose:** If the trade is a **long** position and matches tags related to grinding modes (e.g., normal, pump, rapid), it triggers the `long_grind_adjust_trade_position` method.
+- **Effect:** Implements adjustments for grinding mode strategies, which might aim to optimize profits in slow-moving markets.
+
+
+#### **5. Grinding Mode (Short Trades)**
+```python
+elif trade.is_short and (
+    any(c in (...) for c in enter_tags)
+    or not any(c in (...) for c in enter_tags)
+):
+    return self.short_grind_adjust_trade_position(...)
+```
+- **Purpose:** Similar to the grinding mode for long trades, but applied to **short** trades. Uses predefined tags like `short_normal_mode_tags` and others.
+- **Effect:** Adjusts short positions based on grinding mode rules.
+
+
+#### **6. Default Return**
+```python
+return None
+```
+- **Purpose:** If none of the above conditions are met, no adjustment is made.
+- **Effect:** Ensures the function doesn't make unnecessary changes when conditions don't align.
+
+
+### Additional Insights
+- **Customizability:** The function relies heavily on predefined tags (`long_rebuy_mode_tags`, `long_grind_mode_tags`, etc.), allowing for extensive customization of trading behavior.
+- **Reusability:** Calls to `long_rebuy_adjust_trade_position`, `long_grind_adjust_trade_position`, and `short_grind_adjust_trade_position` encapsulate specific logic for those modes, making the function modular.
+- **Flexibility:** Supports both long and short trades and distinguishes between various trading modes for nuanced control over adjustments.
+
+
+### High-Level Purpose
+The `adjust_trade_position` function is a critical part of the strategy's risk management and profit optimization framework. It dynamically adjusts ongoing trades based on the context, enabling the strategy to respond adaptively to changing market conditions. This can help maximize profits in favorable situations (e.g., rebuying) and mitigate risks in less favorable ones.
+
 ## Grind mode<a name="grinding"></a>
 
 The "grind mode" is a strategy which involves increasing the position in a losing trade. It activates when the asset's price falls significantly below the initial entry point, offering an opportunity to buy more of the asset at a lower price and thereby reduce the average entry price.
