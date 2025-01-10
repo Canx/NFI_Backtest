@@ -3,6 +3,9 @@ import subprocess
 import sys
 from datetime import datetime
 
+# Global variable for the target file to check
+TARGET_FILE = "NostalgiaForInfinityX5.py"
+
 # Resolve the actual script location, even if called through a symlink
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 STRAT_DIR = SCRIPT_DIR  # Assuming the script is in the root of NostalgiaForInfinity
@@ -22,7 +25,6 @@ def check_dependency(command, name):
     """Check if a required command is available on the system."""
     try:
         subprocess.run([command, "--version"], check=True, text=True, capture_output=True)
-        log_message(f"Dependency '{name}' is installed.")
     except FileNotFoundError:
         log_message(f"Error: Dependency '{name}' is not installed. Please install it and try again.")
         sys.exit(1)
@@ -59,20 +61,30 @@ def check_strategy_update():
     log_message(f"Checking updates for {STRAT_DIR}")
     try:
         os.chdir(STRAT_DIR)
-        subprocess.run(["git", "fetch"], check=True)
 
-        local = subprocess.run(["git", "rev-parse", "HEAD"], check=True, text=True, capture_output=True).stdout.strip()
-        remote = subprocess.run(["git", "rev-parse", "origin/main"], check=True, text=True, capture_output=True).stdout.strip()
+        # Fetch updates from the remote repository
+        fetch_result = subprocess.run(["git", "fetch", "origin"], check=True, capture_output=True, text=True)
 
-        if local != remote:
-            log_message("Update detected in the strategy repository.")
+        # Check if the specific file has differences
+        diff_result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD", "origin/main"],
+            check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+        # Log the diff output for debugging
+        log_message(f"Files changed: {diff_result}")
+
+        # Check if the target file is in the list of changed files
+        if TARGET_FILE in diff_result.splitlines():
+            log_message(f"Update detected for {TARGET_FILE}.")
             if check_branch_status():
-                subprocess.run(["git", "pull"], check=True)
+                pull_result = subprocess.run(["git", "pull", "origin", "main"], check=True, capture_output=True, text=True)
+                log_message(pull_result.stdout.strip())
             else:
-                log_message("Warning: Unable to pull updates due to branch issues. Skipping pull.")
+                log_message(f"Warning: Unable to pull updates due to branch issues. Skipping pull.")
             return True
         else:
-            log_message("No updates in the strategy repository.")
+            log_message(f"No updates detected for {TARGET_FILE}.")
             return False
     except subprocess.CalledProcessError as e:
         log_message(f"Error checking updates for the strategy: {e}")
@@ -131,3 +143,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
