@@ -127,9 +127,23 @@ def is_docker_running():
         return False
 
 
+def ensure_on_main_branch():
+    """Ensure that the current branch is 'main'."""
+    try:
+        branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], check=True, text=True, capture_output=True).stdout.strip()
+        if branch != "main":
+            log_message(f"Error: You are on branch '{branch}', but 'main' is required. Please switch to the 'main' branch and try again.")
+            sys.exit(1)
+        log_message("Confirmed: On 'main' branch.")
+    except subprocess.CalledProcessError:
+        log_message("Error: Unable to determine the current branch. Ensure you are in a valid Git repository.")
+        sys.exit(1)
+
+
 def main():
     log_message("Starting update process...")
 
+    ensure_on_main_branch()  # Ensure we are on the main branch
     check_dependencies()
     check_env_file()
 
