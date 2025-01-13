@@ -2,7 +2,7 @@
 
 # [Configuration](#config)
 
-# Indicators
+# [Indicators](#indicators)
 
 # Entry protections
 
@@ -92,7 +92,7 @@ Keys that can be added to config.json<a name="config"></a>
 
 ```
 
-# Indicators<a name="Indicators"></a>
+# Indicators<a name="indicators"></a>
 
 The strategy outlined utilizes a variety of technical indicators to analyze market trends and provide signals for trading. Here’s a breakdown of each type of indicator and its purpose:
 
