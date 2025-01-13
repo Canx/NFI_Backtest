@@ -2,6 +2,8 @@
 
 # [Configuration](#config)
 
+# [Indicators](#ind)
+
 # Entry protections
 
 1. [global_protections_long_pump](#gplp)
@@ -89,6 +91,105 @@ Keys that can be added to config.json<a name="config"></a>
 
 
 ```
+
+# Indicators<a name="ind"></a>
+
+The strategy outlined utilizes a variety of technical indicators to analyze market trends and provide signals for trading. Here’s a breakdown of each type of indicator and its purpose:
+
+
+## **1. RSI (Relative Strength Index)**
+- **Purpose**: Measures the speed and change of price movements to identify overbought or oversold conditions.
+- **Usage**: Different periods are used:
+  - **RSI_3 & RSI_4**: Very short-term momentum indicators for quick responses.
+  - **RSI_14**: Standard period, balances between short-term and long-term trends.
+  - **RSI_20**: Longer-term view for trend analysis.
+- **Additional Calculation**: Change percentages (`RSI_3_change_pct`, `RSI_14_change_pct`) assess the momentum's rate of change.
+
+
+## **2. EMA (Exponential Moving Average)**
+- **Purpose**: Smooths price data to identify trends, giving more weight to recent prices.
+- **Usage**: Various lengths are applied to monitor short-term to long-term trends:
+  - Short-term: **EMA_3, EMA_9, EMA_12**
+  - Medium-term: **EMA_16, EMA_20, EMA_26**
+  - Long-term: **EMA_50, EMA_200**
+  
+
+## **3. SMA (Simple Moving Average)**
+- **Purpose**: Provides a smoothed view of price trends, giving equal weight to all data points.
+- **Usage**: Fewer lengths are used, such as **SMA_16** and **SMA_30**, for medium-term trend analysis.
+
+
+## **4. Bollinger Bands (BB)**
+- **Purpose**: Measure price volatility and potential overbought/oversold levels.
+- **Usage**:
+  - **BBL (Lower Band)**: Support level.
+  - **BBM (Middle Band)**: Moving average baseline.
+  - **BBU (Upper Band)**: Resistance level.
+  - **BBB (Bandwidth)**: Indicates the range of price volatility.
+  - **BBP (Percent B)**: Position of the price within the bands.
+  - Applied to **20**- and **40**-period lengths.
+
+
+## **5. MFI (Money Flow Index)**
+- **Purpose**: Combines price and volume data to assess the strength of money flowing in or out of an asset.
+- **Usage**: Standard **14-period** calculation.
+
+
+## **6. CMF (Chaikin Money Flow)**
+- **Purpose**: Analyzes the volume-weighted average of accumulation and distribution.
+- **Usage**: Applied with a **20-period** length.
+
+
+## **7. Williams %R**
+- **Purpose**: Identifies overbought and oversold levels similar to RSI but on a reversed scale.
+- **Usage**:
+  - **WILLR_14**: Shorter-term trend.
+  - **WILLR_480**: Longer-term trend for broader market context.
+
+
+## **8. AROON**
+- **Purpose**: Measures the time since the highest high or lowest low to identify trend direction and strength.
+- **Usage**:
+  - **AROONU**: Uptrend strength.
+  - **AROOND**: Downtrend strength.
+
+
+## **9. Stochastic RSI (STOCHRSI)**
+- **Purpose**: A momentum indicator that applies stochastic calculations to RSI values to refine overbought/oversold signals.
+- **Usage**: Tracks **%K** and **%D** lines.
+
+
+## **10. KST (Know Sure Thing)**
+- **Purpose**: A momentum oscillator that combines multiple rate-of-change calculations to smooth out signals.
+- **Usage**:
+  - **KST**: The primary trend signal.
+  - **KSTs**: Smoothed version for confirmation.
+
+
+## **11. OBV (On-Balance Volume)**
+- **Purpose**: Relates volume to price changes to assess buying and selling pressure.
+- **Usage**:
+  - Includes percentage changes in OBV for momentum analysis.
+
+## **12. ROC (Rate of Change)**
+- **Purpose**: Measures the percentage change in price over a specific period to identify momentum.
+- **Usage**:
+  - Short-term: **ROC_2**
+  - Medium-term: **ROC_9**
+
+### **13. Candle Change Percent**
+- **Purpose**: Measures the percentage change between the open and close prices to gauge intraday momentum.
+
+## **14. Close Max**
+- **Purpose**: Tracks the maximum closing price over a rolling period.
+- **Usage**:
+  - **close_max_48**: Applied to a 48-period window.
+
+### **15. Empty Candle Count**
+- **Purpose**: Counts the number of zero-volume candles over a specified window to identify illiquid periods.
+- **Usage**:
+  - **num_empty_288**: Rolling sum over 288 periods.
+
 
 # Entry protections
 
