@@ -2,6 +2,9 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Dynamically resolve the directory where the script is located
 def get_script_directory():
@@ -11,8 +14,13 @@ def get_script_directory():
 # Global constants
 SCRIPT_DIR = get_script_directory()
 STRAT_DIR = SCRIPT_DIR  # Assuming strategy files are in the script's directory
-TARGET_FILE = "NostalgiaForInfinityX5.py"
+STRATEGY_NAME = os.getenv("FREQTRADE__STRATEGY", "NostalgiaForInfinityX5")
+TARGET_FILE = f"{STRATEGY_NAME}.py"
 LOG_FILE = os.path.join(SCRIPT_DIR, "run_bot.log")
+
+
+
+
 
 
 def log_message(message):
