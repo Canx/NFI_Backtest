@@ -764,7 +764,7 @@ This signal effectively combines **momentum, trend, and volatility conditions** 
 
 ---
 
-## Condition #101 - Rapid mode (Long)<a name="long_101"></a>
+## Condition #101 - Rapid mode (Long)<a name="rapid_101"></a>
 
 ### Analysis of the Entry Signal
 
