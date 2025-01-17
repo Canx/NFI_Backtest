@@ -23,6 +23,9 @@
 8. [Condition 42 - Quick mode (Long)](#long_42)
 9. [Condition 43 - Quick mode (Long)](#long_43)
 
+### Rapid mode
+
+10. [Condition 101 - Rapid mode (Long)](#rapid_101)
 ### Grind mode
 11. [Condition 120 - Grind mode (Long)](#long_120)
 
@@ -605,6 +608,63 @@ This entry signal identifies **oversold conditions within a strong bearish trend
 
 ### **Conclusion**  
 This signal effectively combines **momentum, trend, and volatility conditions** to pinpoint potential oversold scenarios within bearish trends. While it appears well-constructed, refining thresholds and adding additional filters could further improve its precision and reliability.
+
+---
+
+## Condition #101 - Rapid mode (Long)<a name="long_101"></a>
+
+### Analysis of the Entry Signal
+
+#### **1. `df["STOCHRSIk_14_14_3_3"] < 20.0`**
+   - **Meaning:** The 14-period Stochastic RSI (k line) is below 20.
+   - **Interpretation:** This condition identifies oversold momentum based on the Stochastic RSI, a momentum oscillator that combines the RSI and Stochastic indicators. A value below 20 suggests that the price is in an oversold state and could reverse upwards soon.
+
+#### **2. `df["WILLR_14"] < -80.0`**
+   - **Meaning:** The 14-period Williams %R is below -80.
+   - **Interpretation:** Williams %R measures overbought or oversold levels. A value below -80 indicates an oversold condition, signaling potential upward reversal. Combining this with Stochastic RSI strengthens the oversold momentum signal.
+
+#### **3. `df["AROONU_14"] < 25.0`**
+   - **Meaning:** The 14-period Aroon Up indicator is below 25.
+   - **Interpretation:** Indicates that recent highs are distant, reflecting a lack of bullish momentum. This condition adds a trend-following element to the logic, ensuring that the market is not already in a strong uptrend, which might reduce the effectiveness of a reversal signal.
+
+#### **4. `df["close"] < (df["EMA_20"] * 0.978)`**
+   - **Meaning:** The current closing price is below 97.8% of the 20-period EMA.
+   - **Interpretation:** This confirms that the price is trading significantly below its short-term average, indicating a bearish bias and reinforcing the oversold narrative. By setting this condition, the model ensures entries at a lower price relative to the average, enhancing the risk-reward ratio for potential reversals.
+
+
+### **Overall Strategy Analysis**
+
+This entry logic is designed to detect **oversold conditions with potential for upward reversals** in a bearish or consolidating market. It combines momentum oscillators (Stochastic RSI, Williams %R) with a trend indicator (Aroon Up) and a price-position condition (EMA deviation).
+
+
+### **Strengths**
+1. **Robust Oversold Confirmation:** The combination of Stochastic RSI and Williams %R provides a strong indication of oversold conditions, increasing confidence in potential reversals.
+2. **Trend Awareness:** Aroon Up ensures that the model only signals entries when the market shows weak bullish momentum, aligning with the reversal context.
+3. **Price Context:** The EMA-based condition ensures trades occur at a discount relative to the short-term trend, enhancing entry timing.
+
+
+### **Suggestions for Improvement or Consideration**
+1. **Add Volume Analysis:**
+   - Introduce a volume filter, such as `df["volume"] > df["volume"].rolling(20).mean()`, to confirm market participation during potential reversals.
+2. **Optimize Thresholds:**
+   - Experiment with tighter thresholds (e.g., `df["STOCHRSIk_14_14_3_3"] < 15.0`) to identify more extreme oversold conditions.
+3. **Incorporate Volatility Metrics:**
+   - Add Bollinger Band conditions (e.g., `df["close"] < df["BBL_20_2.0"]`) to identify when prices reach extreme deviations.
+4. **Higher Timeframe Confirmation:**
+   - Add a higher timeframe filter, such as a 50-period EMA trend alignment, to ensure the reversal aligns with broader market sentiment.
+5. **Exit Strategy:**
+   - Define clear exit rules, such as:
+     - Stochastic RSI crossing above 80.
+     - Price closing above the 20-period EMA.
+     - A percentage-based trailing stop to lock in gains during potential upward trends.
+6. **Backtesting and Refinement:**
+   - Test this strategy across different assets and timeframes to evaluate its robustness.
+   - Optimize the `0.978` EMA multiplier for varying market conditions to improve precision.
+
+
+### **Conclusion**
+
+This logic effectively identifies **oversold opportunities within a bearish or weak market trend**. The combination of momentum indicators, trend awareness, and price-position context offers a well-rounded entry strategy. However, introducing additional filters (e.g., volume, volatility) and refining thresholds could enhance reliability and profitability.
 
 ---
 
