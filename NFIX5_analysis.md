@@ -2,6 +2,8 @@
 
 # [Configuration](#config)
 
+# [Indicators](#ind)
+
 # Entry protections
 
 1. [global_protections_long_pump](#gplp)
@@ -93,80 +95,231 @@ Keys that can be added to config.json<a name="config"></a>
 
 ```
 
+# Indicators<a name="ind"></a>
+
+The strategy outlined utilizes a variety of technical indicators to analyze market trends and provide signals for trading. Here’s a breakdown of each type of indicator and its purpose:
+
+
+## **1. RSI (Relative Strength Index)**
+- **Purpose**: Measures the speed and change of price movements to identify overbought or oversold conditions.
+- **Usage**: Different periods are used:
+  - **RSI_3 & RSI_4**: Very short-term momentum indicators for quick responses.
+  - **RSI_14**: Standard period, balances between short-term and long-term trends.
+  - **RSI_20**: Longer-term view for trend analysis.
+- **Additional Calculation**: Change percentages (`RSI_3_change_pct`, `RSI_14_change_pct`) assess the momentum's rate of change.
+
+
+## **2. EMA (Exponential Moving Average)**
+- **Purpose**: Smooths price data to identify trends, giving more weight to recent prices.
+- **Usage**: Various lengths are applied to monitor short-term to long-term trends:
+  - Short-term: **EMA_3, EMA_9, EMA_12**
+  - Medium-term: **EMA_16, EMA_20, EMA_26**
+  - Long-term: **EMA_50, EMA_200**
+  
+
+## **3. SMA (Simple Moving Average)**
+- **Purpose**: Provides a smoothed view of price trends, giving equal weight to all data points.
+- **Usage**: Fewer lengths are used, such as **SMA_16** and **SMA_30**, for medium-term trend analysis.
+
+
+## **4. Bollinger Bands (BB)**
+- **Purpose**: Measure price volatility and potential overbought/oversold levels.
+- **Usage**:
+  - **BBL (Lower Band)**: Support level.
+  - **BBM (Middle Band)**: Moving average baseline.
+  - **BBU (Upper Band)**: Resistance level.
+  - **BBB (Bandwidth)**: Indicates the range of price volatility.
+  - **BBP (Percent B)**: Position of the price within the bands.
+  - Applied to **20**- and **40**-period lengths.
+
+
+## **5. MFI (Money Flow Index)**
+- **Purpose**: Combines price and volume data to assess the strength of money flowing in or out of an asset.
+- **Usage**: Standard **14-period** calculation.
+
+
+## **6. CMF (Chaikin Money Flow)**
+- **Purpose**: Analyzes the volume-weighted average of accumulation and distribution.
+- **Usage**: Applied with a **20-period** length.
+
+
+## **7. Williams %R**
+- **Purpose**: Identifies overbought and oversold levels similar to RSI but on a reversed scale.
+- **Usage**:
+  - **WILLR_14**: Shorter-term trend.
+  - **WILLR_480**: Longer-term trend for broader market context.
+
+
+## **8. AROON**
+- **Purpose**: Measures the time since the highest high or lowest low to identify trend direction and strength.
+- **Usage**:
+  - **AROONU**: Uptrend strength.
+  - **AROOND**: Downtrend strength.
+
+
+## **9. Stochastic RSI (STOCHRSI)**
+- **Purpose**: A momentum indicator that applies stochastic calculations to RSI values to refine overbought/oversold signals.
+- **Usage**: Tracks **%K** and **%D** lines.
+
+
+## **10. KST (Know Sure Thing)**
+- **Purpose**: A momentum oscillator that combines multiple rate-of-change calculations to smooth out signals.
+- **Usage**:
+  - **KST**: The primary trend signal.
+  - **KSTs**: Smoothed version for confirmation.
+
+
+## **11. OBV (On-Balance Volume)**
+- **Purpose**: Relates volume to price changes to assess buying and selling pressure.
+- **Usage**:
+  - Includes percentage changes in OBV for momentum analysis.
+
+## **12. ROC (Rate of Change)**
+- **Purpose**: Measures the percentage change in price over a specific period to identify momentum.
+- **Usage**:
+  - Short-term: **ROC_2**
+  - Medium-term: **ROC_9**
+
+### **13. Candle Change Percent**
+- **Purpose**: Measures the percentage change between the open and close prices to gauge intraday momentum.
+
+## **14. Close Max**
+- **Purpose**: Tracks the maximum closing price over a rolling period.
+- **Usage**:
+  - **close_max_48**: Applied to a 48-period window.
+
+### **15. Empty Candle Count**
+- **Purpose**: Counts the number of zero-volume candles over a specified window to identify illiquid periods.
+- **Usage**:
+  - **num_empty_288**: Rolling sum over 288 periods.
+
+
 # Entry protections
 
 ## global_protections_long_pump <a name="gplp"></a>
 
-### Summary of Implemented Protections
-The "pump" signal is designed to safeguard against specific scenarios where entering a long position would be highly risky. This is achieved through a combination of indicators that analyze overbought conditions, weak corrections, and unsustainable trends across various timeframes.
+The "global_protections_long_pump" in this freqtrade strategy appears to be a pre-signal filter designed to analyze various market indicators across multiple timeframes to detect and prevent potentially unfavorable conditions for entering long positions. This protection mechanism uses a combination of technical indicators like RSI, AROON, CCI, Stochastic RSI, and ROC across 5-minute, 15-minute, hourly, 4-hour, and daily charts.
 
-The primary indicators used include:  
-- **RSI (Relative Strength Index):** Evaluates overbought or oversold conditions.  
-- **Aroon:** Determines trend strength.  
-- **Stochastic RSI:** An adapted RSI for greater sensitivity to changes.  
-- **ROC (Rate of Change):** Measures the speed of price changes.  
-- **WILLIAMS %R:** Another overbought/oversold indicator.
+### Summary of its logic:
+- It evaluates downtrends or overbought conditions across different timeframes.
+- It checks if indicators are not yet low enough to signify a safe entry (e.g., RSI above certain thresholds, Stochastic RSI indicating overbought conditions).
+- It analyzes whether higher timeframes like 1-day and 4-hour charts are still in a high or overbought state despite short-term pullbacks.
 
-### Scenario Examples and How the Signal Provides Protection
+This filter aims to avoid entering long trades when market conditions are not favorable or could indicate a potential pump or overbought scenario, which might lead to a rapid reversal. By applying this pre-check, the strategy ensures a more cautious approach before committing to signals from other parts of the strategy.
 
-#### 1. **Avoiding Entries in Overbought Markets**
-**Conditions:**  
-- RSI_3 > 60 on the 1-day timeframe.  
-- AROONU_14_1d < 75 (weak or exhausted uptrend).  
-- ROC_9_1d < 40 (insufficient momentum).  
+### Potential improvements
 
-**Example:**  
-An asset shows strong upward movement over the past two days, with RSI and ROC indicating that the trend is losing strength. While the price may seem attractive due to its recent momentum, the algorithm identifies that entering at this point could mean buying near a local top.  
+The "global_protections_long_pump" filter is comprehensive, analyzing multiple indicators across various timeframes to assess market conditions. While it's robust, here are some suggestions for potential improvement or refinement to optimize its performance:
 
-**Protection:**  
-The combination of high RSI, weakened Aroon trend, and low momentum (ROC) prevents entry when the price is likely near a reversal point.
+#### 1. **Indicator Thresholds**
+- **Observation**: Many thresholds (e.g., RSI > 5 or < 30) are hardcoded and may not dynamically adapt to changing market conditions.
+- **Suggestion**: 
+  - Use dynamic thresholds based on historical volatility or market state. For example, calculate rolling averages or deviations for RSI thresholds instead of fixed values.
+  - Incorporate an adaptive threshold mechanism that adjusts depending on the asset's ATR (Average True Range) or other volatility metrics.
+
+#### 2. **Redundancy of Conditions**
+- **Observation**: There are overlapping checks for the same indicators across different timeframes (e.g., RSI_3 on multiple timeframes with similar thresholds).
+- **Suggestion**: 
+  - Consolidate redundant conditions to reduce complexity without sacrificing the filter’s effectiveness.
+  - Use aggregated signals, such as weighted averages of RSI or other indicators across timeframes, instead of evaluating each timeframe independently.
+
+#### 3. **Trend Confirmation**
+- **Observation**: The logic heavily focuses on overbought/oversold conditions but does not explicitly account for broader trend confirmation.
+- **Suggestion**: 
+  - Introduce trend-following indicators like EMA or SMA crossovers to ensure alignment with the prevailing trend.
+  - Use ADX (Average Directional Index) to confirm the strength of the trend and only activate the filter during trending markets.
+
+#### 4. **Handling Multi-Timeframe Conflicts**
+- **Observation**: Different timeframes may provide conflicting signals, which can lead to unclear filter activation.
+- **Suggestion**: 
+  - Implement a weighting system to prioritize longer timeframes (e.g., daily charts) when conflicts arise.
+  - Define explicit rules to resolve conflicts between timeframes, such as "if 4h is neutral but 15m is overbought, defer to the higher timeframe."
+
+#### 5. **Improved Overbought Detection**
+- **Observation**: The conditions focus heavily on individual indicator thresholds (e.g., Stochastic RSI, ROC) but may miss nuanced market behavior.
+- **Suggestion**: 
+  - Combine indicators into composite signals, such as creating a combined momentum score using RSI, Stochastic RSI, and AROON.
+  - Integrate Bollinger Bands or Keltner Channels to identify overbought conditions relative to price volatility.
+
+#### 6. **Exit Condition Verification**
+- **Observation**: The filter ensures entry prevention during risky conditions but lacks explicit alignment with exit strategies.
+- **Suggestion**: 
+  - Integrate this protection with the strategy's exit logic to avoid scenarios where entries are filtered out but existing positions remain exposed to adverse conditions.
+
+#### 7. **Performance Evaluation**
+- **Observation**: The logic is detailed but may add significant computational overhead.
+- **Suggestion**: 
+  - Profile the execution time of this filter to identify bottlenecks. Optimize indicator calculations (e.g., caching intermediate results).
+  - Regularly backtest and validate the filter against historical data to ensure its efficacy, especially in varying market regimes (bullish, bearish, and sideways).
+
+#### 8. **Incorporate Volume Analysis**
+- **Observation**: The filter does not include volume-based indicators, which can provide critical insights into market strength.
+- **Suggestion**: 
+  - Add volume-related metrics like OBV (On-Balance Volume) or CMF (Chaikin Money Flow) to detect pumps with unusual volume spikes.
+  - Use volume divergence in combination with other conditions to enhance filter reliability.
+
+#### 9. **Simplify for Maintainability**
+- **Observation**: The filter’s complexity might make it harder to maintain or debug.
+- **Suggestion**: 
+  - Modularize the conditions into smaller, reusable blocks (e.g., separate logic for each timeframe or indicator group).
+  - Add comments and clear documentation to explain each condition's rationale.
 
 
-#### 2. **False Correction Signals**
-**Conditions:**  
-- RSI_14_15m < 30 (mild oversold condition on the 15-minute timeframe).  
-- AROONU_14_15m < 50 (mild downtrend).  
-- STOCHk_14_3_3_15m < 20 (additional confirmation of oversold condition).  
+By implementing these improvements, the "global_protections_long_pump" filter can become more adaptive, efficient, and effective in identifying unfavorable market conditions while reducing complexity and redundancy.
 
-**Example:**  
-An asset shows slight downward movement over the past hour, but the volume is low, and longer timeframes (such as 4h and 1d) indicate that the price remains high or overbought.  
+### Downtrend detection improvements
 
-**Protection:**  
-Although the 15-minute timeframe suggests oversold conditions, the lack of alignment with higher timeframes prevents premature entry, safeguarding against a potential continued pullback.
+The "global_protections_long_pump" filter has some mechanisms in place that can help in downtrend conditions, but it is not fully optimized for sustained or sharp downtrends. Here’s an analysis:
+
+####  **Strengths for Downtrend Detection:**
+1. **Overbought Indicators Across Timeframes:**
+   - The filter uses indicators like RSI, Stochastic RSI, and AROON to detect overbought conditions, which can help avoid entering long positions during downtrend pullbacks.
+
+2. **Multi-Timeframe Analysis:**
+   - By considering multiple timeframes (e.g., 5m, 15m, 1h, 4h, and 1d), the filter can potentially identify broader downtrends and prevent false signals from short-term countertrend moves.
+
+3. **Momentum Indicators:**
+   - Indicators like ROC and WILLR (Williams %R) are included, which can capture bearish momentum and avoid entering trades during periods of strong selling pressure.
+
+4. **Redundancy Across Indicators:**
+   - The combination of multiple conditions ensures that even if one indicator fails to detect the downtrend, others may trigger the protection.
+
+#### **Limitations in Handling Downtrends:**
+1. **Insufficient Focus on Downtrend Confirmation:**
+   - While the filter avoids overbought conditions, it does not explicitly confirm the presence of a downtrend (e.g., via moving average crossovers or ADX).
+   - It lacks checks for persistent lower lows and lower highs, which are classic downtrend signals.
+
+2. **Limited Adaptation to Strong Bearish Momentum:**
+   - Fixed thresholds (e.g., RSI > 5 or ROC < certain values) might not adapt well to different levels of bearish momentum.
+   - Sharp or volatile downtrends might bypass the filter if they don’t meet the pre-defined thresholds.
+
+3. **Conflict Between Timeframes:**
+   - The filter might give conflicting signals when lower timeframes show a temporary pullback in the downtrend, potentially allowing entries when the overall market is bearish.
+
+4. **Volume and Market Context:**
+   - There is no volume analysis or integration of bearish divergence, which are critical in understanding the strength of a downtrend.
 
 
-#### 3. **Unsustainable Momentum**
-**Conditions:**  
-- RSI_3_4h > 50 (mild overbought condition on the 4-hour timeframe).  
-- ROC_9_4h < 30 (weakened momentum on the 4-hour timeframe).  
-- AROONU_14_4h < 75 (uptrend lacks solid strength).  
+#### **Suggestions for Improving Downtrend Readiness:**
+1. **Integrate Trend-Confirming Indicators:**
+   - Add moving average crossovers (e.g., 50 EMA below 200 EMA) or ADX > 25 to explicitly confirm downtrend conditions.
+   - Use price action patterns, such as detecting a series of lower lows and lower highs.
 
-**Example:**  
-The price has risen rapidly in the last 4 hours, but the rate of change (ROC) is starting to decelerate. Additionally, Aroon indicates that the uptrend is not strong enough to guarantee its continuation.  
+2. **Dynamic Thresholds:**
+   - Replace fixed indicator thresholds with dynamic ones based on market volatility (e.g., ATR) to better adapt to strong selling pressure.
 
-**Protection:**  
-The algorithm blocks entry to avoid exposure to a move that could reverse abruptly due to insufficient momentum support.
+3. **Incorporate Volume Analysis:**
+   - Use OBV (On-Balance Volume) or Chaikin Money Flow to detect selling pressure accompanying price declines.
 
-#### 4. **Timeframe Divergence**
-**Conditions:**  
-- RSI_14_15m < 30 (oversold on the 15-minute timeframe).  
-- RSI_3_1h > 45 (overbought on the 1-hour timeframe).  
-- RSI_3_4h > 50 (overbought on the 4-hour timeframe).  
+4. **Define Clear Timeframe Priority:**
+   - In downtrends, prioritize higher timeframes (e.g., 4h or 1d) to avoid being misled by temporary pullbacks in shorter timeframes.
 
-**Example:**  
-An asset appears oversold on the 15-minute timeframe, but higher timeframes indicate persistent overbought conditions. This suggests that the correction in the 15-minute timeframe is minor, merely a small pullback within an overall overbought trend.  
+5. **Downtrend-Specific Protections:**
+   - Add specific protections for prolonged downtrends, such as avoiding trades when key moving averages slope downward or when ROC consistently indicates strong negative momentum.
 
-**Protection:**  
-The algorithm avoids decisions based on a single timeframe, ensuring a more comprehensive view of the market.
 
-### Conclusion
-The "pump" signal primarily protects against:  
-1. **Entries at local tops.**  
-2. **Minor pullbacks that do not present real opportunities.**  
-3. **Uptrends with weakened momentum.**  
-4. **Divergences across timeframes that suggest elevated risks.**  
-
-This strategy minimizes the risk of getting caught in unfavorable price movements by leveraging a multi-indicator, multi-timeframe approach.
+####  **Conclusion:**
+The filter is reasonably prepared for avoiding long trades in some downtrend scenarios due to its focus on overbought conditions and multi-timeframe analysis. However, it lacks explicit mechanisms to confirm and adapt to strong or persistent bearish trends. Enhancing the filter with trend-confirming indicators, dynamic thresholds, and volume-based analysis would make it more robust in downtrend conditions.
 
 ## global_protections_short_pump<a name="gpsp"></a>
 
@@ -803,6 +956,92 @@ TODO
 
 # Position adjustment modes
 
+## adjust_trade_position function
+
+The `adjust_trade_position` function in the **NostalgiaForInfinityX5** strategy of Freqtrade is responsible for dynamically adjusting the position of an ongoing trade based on specific conditions. Here's a breakdown of its functionality:
+
+### Overview
+This method is invoked to determine whether and how a trade's position should be adjusted, such as increasing the stake or modifying the strategy, depending on the trade's status, market conditions, and predefined rules. It supports both long and short positions and handles different trading modes like rebuy and grind modes.
+
+
+### Key Components
+
+#### **1. Position Adjustment Toggle**
+```python
+if self.position_adjustment_enable == False:
+    return None
+```
+- **Purpose:** If `position_adjustment_enable` is set to `False`, the function exits without making any changes.
+- **Effect:** This provides a global switch to enable or disable position adjustments.
+
+
+#### **2. Enter Tag Parsing**
+```python
+enter_tag = "empty"
+if hasattr(trade, "enter_tag") and trade.enter_tag is not None:
+    enter_tag = trade.enter_tag
+enter_tags = enter_tag.split()
+```
+- **Purpose:** The `enter_tag` is extracted from the `trade` object to determine the mode or strategy associated with the trade (e.g., rebuy, grind).
+- **Effect:** Tags are split into a list for easier matching against predefined mode-specific tags.
+
+
+#### **3. Rebuy Mode**
+```python
+if not trade.is_short and (
+    all(c in self.long_rebuy_mode_tags for c in enter_tags)
+    or (
+        any(c in self.long_rebuy_mode_tags for c in enter_tags)
+        and all(c in (self.long_rebuy_mode_tags + self.long_grind_mode_tags) for c in enter_tags)
+    )
+):
+    return self.long_rebuy_adjust_trade_position(...)
+```
+- **Purpose:** If the trade is a **long** position and matches specific `long_rebuy_mode_tags`, it triggers the `long_rebuy_adjust_trade_position` method.
+- **Effect:** Adjusts the trade by implementing the logic for the rebuy mode, which likely increases the position size to capitalize on favorable market conditions.
+
+
+#### **4. Grinding Mode (Long Trades)**
+```python
+elif not trade.is_short and (
+    any(c in (...) for c in enter_tags)
+    or not any(c in (...) for c in enter_tags)
+):
+    return self.long_grind_adjust_trade_position(...)
+```
+- **Purpose:** If the trade is a **long** position and matches tags related to grinding modes (e.g., normal, pump, rapid), it triggers the `long_grind_adjust_trade_position` method.
+- **Effect:** Implements adjustments for grinding mode strategies, which might aim to optimize profits in slow-moving markets.
+
+
+#### **5. Grinding Mode (Short Trades)**
+```python
+elif trade.is_short and (
+    any(c in (...) for c in enter_tags)
+    or not any(c in (...) for c in enter_tags)
+):
+    return self.short_grind_adjust_trade_position(...)
+```
+- **Purpose:** Similar to the grinding mode for long trades, but applied to **short** trades. Uses predefined tags like `short_normal_mode_tags` and others.
+- **Effect:** Adjusts short positions based on grinding mode rules.
+
+
+#### **6. Default Return**
+```python
+return None
+```
+- **Purpose:** If none of the above conditions are met, no adjustment is made.
+- **Effect:** Ensures the function doesn't make unnecessary changes when conditions don't align.
+
+
+### Additional Insights
+- **Customizability:** The function relies heavily on predefined tags (`long_rebuy_mode_tags`, `long_grind_mode_tags`, etc.), allowing for extensive customization of trading behavior.
+- **Reusability:** Calls to `long_rebuy_adjust_trade_position`, `long_grind_adjust_trade_position`, and `short_grind_adjust_trade_position` encapsulate specific logic for those modes, making the function modular.
+- **Flexibility:** Supports both long and short trades and distinguishes between various trading modes for nuanced control over adjustments.
+
+
+### High-Level Purpose
+The `adjust_trade_position` function is a critical part of the strategy's risk management and profit optimization framework. It dynamically adjusts ongoing trades based on the context, enabling the strategy to respond adaptively to changing market conditions. This can help maximize profits in favorable situations (e.g., rebuying) and mitigate risks in less favorable ones.
+
 ## Grind mode<a name="grinding"></a>
 
 The "grind mode" is a strategy which involves increasing the position in a losing trade. It activates when the asset's price falls significantly below the initial entry point, offering an opportunity to buy more of the asset at a lower price and thereby reduce the average entry price.
@@ -825,7 +1064,553 @@ The goal of "grind mode" is to improve the chances of making a profit when the a
 
 In summary, "grind mode" in NostalgiaForInfinityX5 is an aggressive strategy aimed at leveraging price drops to accumulate a position at a lower average cost. By increasing the position during market weakness, "grind mode" seeks to maximize potential profits when the price reverses.
 
+### Explanation of Grinding Levels: GD1 (Grinding Level 1)
+
+**Grinding Level 1 (GD1)** is the first and foundational level of the grinding logic. This level is designed to rebalance and optimize a trade's position when specific market conditions are met. Here's a detailed breakdown of how GD1 operates:
+
 ---
+
+### **1. Conditions for GD1 Activation**
+GD1 is triggered based on several factors:
+- **Profitability Thresholds:** The function checks if the trade's profitability is within a specific range.
+  - For example, if the distance ratio (difference between current price and the last entry price) falls below the threshold defined for GD1, a rebuy is considered.
+- **Market Timing:**
+  - No recent trades: Ensures that enough time has passed since the last entry or exit to avoid overtrading.
+  - A significant drop in price (`slice_profit < -0.02`): Indicates a potential opportunity to rebuy at a lower price.
+- **Mode Dependency:**
+  - It may activate in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the strategy’s state.
+
+---
+
+### **2. Actions Taken in GD1**
+GD1 allows for both **buying** and **selling**, depending on market conditions.
+
+#### **Buy Action**
+- **Purpose:** Increase the trade size when prices drop to take advantage of lower prices.
+- **Buy Amount Calculation:**
+  - Proportional to the base trade size (`slice_amount`), multiplied by a GD1-specific stake multiplier.
+  - Adjusted for leverage if the trade is in futures mode.
+  - Ensures the buy amount is greater than the minimum stake and doesn’t exceed the maximum allowed stake.
+- **Market Indicators for Entry:**
+  - The function evaluates indicators like RSI, Aroon, and moving averages to confirm entry opportunities.
+- **Logging and Tagging:** Creates logs and tags the order as `gd1` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position if profitability targets are reached.
+- **Sell Amount Calculation:**
+  - Based on the total amount held at GD1 and adjusted for leverage.
+  - Ensures the remaining stake does not fall below the minimum required size.
+- **Profit Thresholds:**
+  - The function uses thresholds specific to GD1 to determine when it is profitable to sell.
+  - These thresholds include fees (`fee_open_rate`, `fee_close_rate`) to ensure net profitability.
+- **Logging and Tagging:** Logs the action and tags the sell order as `gd1`.
+
+---
+
+### **3. Differences Specific to GD1**
+- **Entry Level Thresholds:** 
+  - GD1 has the most lenient thresholds for triggering rebuys compared to higher levels (GD2–GD6).
+  - This is because GD1 aims to capitalize on the earliest opportunities during a grinding phase.
+- **Multiplier:** The stake multiplier for GD1 is specific to this level and ensures controlled risk during the initial rebuy.
+- **Sub-Grinds:** GD1 supports multiple sub-grinds, meaning it can trigger additional entries within its scope until the maximum sub-grind count is reached.
+
+---
+
+### **4. Risk Mitigation in GD1**
+- **Minimum Stake Enforcement:** Ensures that the position size does not drop below a manageable level.
+- **Exit Prioritization:** If profitability is uncertain, GD1 prioritizes exiting the position to avoid unnecessary risk.
+
+---
+
+### Summary
+GD1 is the initial step in the grinding strategy, focusing on **controlled risk**, **early opportunities**, and **incremental adjustments** to the position. It sets the stage for higher levels (GD2–GD6), which progressively tighten thresholds and adjust stake sizes for more refined rebalancing.
+
+### Explanation of Grinding Levels: GD2 (Grinding Level 2)
+
+**Grinding Level 2 (GD2)** builds upon the logic of GD1, introducing slightly stricter conditions and refinements for adjusting trade positions. GD2 operates as the second layer in the grinding strategy, progressively optimizing the trade by addressing market conditions that require additional rebalancing or profit-taking.
+
+---
+
+### **1. Conditions for GD2 Activation**
+GD2 is triggered under the following circumstances:
+- **Distance Ratio and Profit Thresholds:**
+  - The price distance from the last entry (distance ratio) must fall below the predefined threshold specific to GD2.
+  - GD2 thresholds are generally more conservative than GD1, reflecting the strategy's aim to reduce risk as the position evolves.
+- **Timing Constraints:**
+  - A minimum time gap since the last entry or exit is enforced (e.g., at least 10 minutes).
+  - For market corrections or significant drops (`slice_profit < -0.02`), GD2 considers opportunities to rebuy.
+- **Mode Sensitivity:**
+  - GD2 can operate in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the trade's context.
+  - It is more selective in de-risking compared to GD1.
+
+---
+
+### **2. Actions Taken in GD2**
+GD2 supports both **buying** and **selling** actions, similar to GD1, but with distinct thresholds and calculations.
+
+#### **Buy Action**
+- **Purpose:** Add to the position when the market moves in a favorable direction, within the constraints of GD2-specific thresholds.
+- **Buy Amount Calculation:**
+  - Uses the base slice amount (`slice_amount`) multiplied by the GD2 stake multiplier.
+  - Adjusted for leverage in futures mode.
+  - Ensures the buy amount is:
+    - Greater than the minimum stake.
+    - Less than the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - GD2 may apply stricter conditions for indicators like RSI, Aroon, or moving averages.
+  - These ensure that the rebuy aligns with refined market signals compared to GD1.
+- **Logging and Tagging:** Logs the buy action with a `gd2` tag for tracking purposes.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position when profit targets for GD2 are achieved.
+- **Sell Amount Calculation:**
+  - Based on the total position size at GD2 and adjusted for leverage.
+  - Ensures that the remaining position size does not fall below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD2 uses tighter profit thresholds than GD1, accounting for both entry and exit fees (`fee_open_rate` and `fee_close_rate`).
+  - Only executes a sell if the net profit exceeds the required threshold.
+- **Logging and Tagging:** Logs the action and tags the sell order as `gd2`.
+
+---
+
+### **3. Differences Specific to GD2**
+- **Stricter Thresholds:** 
+  - GD2 introduces more stringent distance ratio and profitability requirements compared to GD1.
+  - This reflects the need for greater precision in later grinding stages.
+- **Lower Multiplier:** The GD2 stake multiplier may be smaller than GD1, reflecting reduced risk tolerance as the grinding process progresses.
+- **Sub-Grind Opportunities:** Similar to GD1, GD2 supports multiple sub-grinds, enabling additional entries within the GD2 level until the maximum sub-grind count is reached.
+
+---
+
+### **4. Risk Mitigation in GD2**
+- **Progressive De-Risking:** GD2 focuses more on de-risking than GD1, especially if market conditions show prolonged unfavorable trends.
+- **Minimum Stake Enforcement:** Ensures that any adjustment leaves the trade above the minimum manageable position size.
+- **Exit Over Rebuy:** If profit thresholds are uncertain, GD2 prioritizes selling over buying to avoid overexposure.
+
+---
+
+### **5. GD2 as a Transition Point**
+GD2 acts as a transition phase in the grinding strategy:
+- It refines the trade by responding to more precise market movements.
+- Sets the stage for the higher grinding levels (GD3–GD6), which implement even stricter thresholds and risk management rules.
+
+---
+
+### Summary
+GD2 introduces **enhanced selectivity**, **risk reduction**, and **refined thresholds** compared to GD1. It ensures that grinding continues in a controlled manner, balancing opportunities for profit with risk management.
+
+### Explanation of Grinding Levels: GD3 (Grinding Level 3)
+
+**Grinding Level 3 (GD3)** is the third tier in the grinding strategy. At this level, the conditions become even more restrictive compared to GD2, emphasizing risk mitigation and ensuring that trades align closely with the strategy's profitability and safety objectives.
+
+---
+
+### **1. Conditions for GD3 Activation**
+GD3 triggers when:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry (distance ratio) must fall below the stricter GD3-specific threshold.
+  - This threshold ensures that entries or adjustments are only made when the market signals strong alignment with the strategy.
+- **Timing Constraints:**
+  - GD3 enforces slightly longer time gaps compared to GD2 between successive entries or exits (e.g., minimum 10 minutes since the last entry and 2 hours for significant market corrections).
+- **Market Signals:**
+  - The market must show consistent alignment with grind-specific indicators (e.g., RSI, Aroon, EMA).
+  - A significant price drop (`slice_profit < -0.03`) or other predefined conditions must justify adjustments.
+- **Mode Sensitivity:**
+  - GD3 operates selectively in **grind mode**, **de-risk mode**, or **recovery mode**, depending on the trade's context and broader market conditions.
+
+---
+
+### **2. Actions Taken in GD3**
+Like the previous levels, GD3 allows for **buying** and **selling** actions but with tighter controls.
+
+#### **Buy Action**
+- **Purpose:** Add to the position if market conditions meet the stricter GD3 criteria.
+- **Buy Amount Calculation:**
+  - Based on the base slice amount (`slice_amount`) multiplied by the GD3-specific stake multiplier.
+  - Adjusted for leverage in futures trading.
+  - Ensures the buy amount:
+    - Exceeds the minimum stake requirement.
+    - Does not surpass the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - GD3 relies on more robust market signals, such as:
+    - **Lower RSI thresholds:** Indicating oversold conditions.
+    - **Aroon Indicator:** Suggesting trend exhaustion.
+    - **EMA Levels:** Confirming strong support levels.
+- **Logging and Tagging:** Tags the order as `gd3` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position if profitability thresholds specific to GD3 are reached.
+- **Sell Amount Calculation:**
+  - Determined based on the GD3 position size and adjusted for leverage.
+  - Ensures the remaining position does not drop below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD3 uses more conservative profit thresholds than GD2 to reflect the level’s increased focus on risk reduction.
+  - Accounts for fees (`fee_open_rate` and `fee_close_rate`) to ensure net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd3`.
+
+---
+
+### **3. Differences Specific to GD3**
+- **Stricter Profitability Criteria:**
+  - GD3 requires higher confidence in profitability before allowing buys or sells.
+- **Lower Multiplier:** The GD3 stake multiplier is smaller than GD2, reflecting the need for tighter risk control at this stage.
+- **Sub-Grinds:** GD3 permits additional entries within its scope, but the maximum sub-grind count for GD3 is typically lower than GD1 or GD2.
+
+---
+
+### **4. Risk Mitigation in GD3**
+- **Selective Entry:** Only executes trades under strong market alignment, reducing unnecessary exposure.
+- **Focus on Safety:** De-risking takes priority over aggressive profit-seeking.
+- **Minimum Stake Enforcement:** Ensures that the position size remains above the minimum manageable level.
+
+---
+
+### **5. GD3 as a Refinement Stage**
+GD3 is a refinement stage in the grinding strategy:
+- It acts as a filter, ensuring that only high-probability opportunities are acted upon.
+- Sets the groundwork for the more restrictive grinding levels (GD4–GD6), which focus heavily on risk mitigation and controlled position adjustments.
+
+---
+
+### Summary
+GD3 is designed for **controlled rebalancing**, **selective adjustments**, and **risk mitigation**. It introduces stricter thresholds and prioritizes safety over profit-seeking, ensuring that the strategy remains resilient during volatile market conditions.
+
+### Explanation of Grinding Levels: GD4 (Grinding Level 4)
+
+**Grinding Level 4 (GD4)** introduces even stricter criteria than GD3, focusing heavily on **risk management** and **precise adjustments**. GD4 is part of the advanced stages of grinding, aimed at carefully optimizing trades while minimizing exposure to adverse market conditions.
+
+---
+
+### **1. Conditions for GD4 Activation**
+GD4 is triggered under specific, highly selective conditions:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry (distance ratio) must meet the stricter GD4-specific thresholds.
+  - GD4’s thresholds are designed to ensure that only the most favorable market opportunities are acted upon.
+- **Timing Requirements:**
+  - Longer time gaps between trades compared to GD3 (e.g., 2+ hours since the last significant adjustment).
+  - Ensures sufficient time for market patterns to develop before taking further action.
+- **Market Signals:**
+  - Strong alignment with grind-specific indicators is required.
+  - Additional indicators, such as higher timeframe moving averages or trend strength, may be considered to confirm the market's direction.
+- **Mode Sensitivity:**
+  - GD4 operates in **grind mode**, **de-risk mode**, or **recovery mode**, but with a primary focus on **de-risking** the trade.
+
+---
+
+### **2. Actions Taken in GD4**
+GD4 enables both **buying** and **selling** actions, but these are even more selective than in GD3.
+
+#### **Buy Action**
+- **Purpose:** Add to the position in scenarios where the market provides highly favorable conditions.
+- **Buy Amount Calculation:**
+  - The base slice amount (`slice_amount`) is multiplied by the GD4-specific stake multiplier.
+  - Adjusted for leverage if the trade is in futures mode.
+  - Buy amount:
+    - Must exceed the minimum stake requirement.
+    - Cannot exceed the maximum allowable stake for the trade.
+- **Market Indicators for Entry:**
+  - **RSI:** Oversold conditions must be confirmed, with additional constraints like divergence with price action.
+  - **EMA Alignment:** Prices must be near key support levels defined by exponential moving averages.
+  - **Volume and Volatility Analysis:** Lower volatility or high volume spikes may be required to trigger a GD4 entry.
+- **Logging and Tagging:** Logs the buy action with a `gd4` tag for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part of the position when profitability thresholds for GD4 are reached.
+- **Sell Amount Calculation:**
+  - Based on the total GD4-specific position size and adjusted for leverage.
+  - Ensures the remaining stake does not drop below the minimum stake threshold.
+- **Profit Thresholds:**
+  - GD4 has stricter profit thresholds than GD3, ensuring only highly profitable exits are executed.
+  - Fees (`fee_open_rate`, `fee_close_rate`) are accounted for to ensure net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd4`.
+
+---
+
+### **3. Differences Specific to GD4**
+- **Tighter Risk Controls:** 
+  - GD4 prioritizes safety and only takes actions with high confidence.
+  - Position adjustments are smaller and more controlled compared to GD1–GD3.
+- **Selective Entry Criteria:**
+  - GD4’s conditions require multiple market indicators to align, significantly reducing the frequency of adjustments.
+- **Fewer Sub-Grinds:** The maximum sub-grind count for GD4 is lower than for GD1–GD3, reflecting its focus on precision over quantity.
+
+---
+
+### **4. Risk Mitigation in GD4**
+- **De-Risking Priority:** GD4 emphasizes reducing exposure when conditions are less favorable, even at the expense of lower profitability.
+- **Minimum Stake Enforcement:** Maintains a manageable position size to prevent overexposure.
+- **Controlled Adjustments:** Ensures that any rebuy or sell action aligns with both profitability and risk reduction goals.
+
+---
+
+### **5. GD4 as a Precision Stage**
+GD4 represents a **fine-tuning stage** in the grinding strategy:
+- It avoids unnecessary adjustments unless there is strong evidence of market alignment.
+- GD4 sets the groundwork for GD5 and GD6, which adopt even more conservative approaches.
+
+---
+
+### Summary
+GD4 is a **precision-driven grinding level** that balances the need for profitability with an increased emphasis on risk management. Its stricter conditions ensure that trades are adjusted only under optimal circumstances, reflecting the advanced stage of the grinding process.
+
+
+### Explanation of Grinding Levels: GD5 (Grinding Level 5)
+
+**Grinding Level 5 (GD5)** is the penultimate level in the grinding strategy. At this stage, the conditions are extremely restrictive, prioritizing **risk minimization** and ensuring that any adjustments to the trade are highly selective. GD5 focuses heavily on **profit preservation** and **strategic de-risking**, making it a critical stage in the advanced grinding process.
+
+---
+
+### **1. Conditions for GD5 Activation**
+GD5 activation depends on highly specific and cautious conditions:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry must meet even stricter thresholds than GD4.
+  - These thresholds are designed to only allow adjustments in exceptional scenarios that align with the strategy's overall objectives.
+- **Timing Requirements:**
+  - GD5 enforces longer cooldown periods between trades compared to GD4 (e.g., several hours or more since the last adjustment).
+  - This ensures the market has had sufficient time to stabilize or confirm a trend.
+- **Market Signals:**
+  - Requires strong and clear alignment with grind-specific indicators, such as:
+    - RSI levels indicating extreme oversold or overbought conditions.
+    - EMA and volume trends that confirm robust support or resistance levels.
+  - Additional confirmations from higher timeframe indicators may also be required.
+- **Mode Sensitivity:**
+  - GD5 primarily operates in **de-risk mode** or **recovery mode**, with grind mode playing a secondary role.
+  - The focus is on preserving capital and carefully managing exposure.
+
+---
+
+### **2. Actions Taken in GD5**
+GD5 permits **buying** and **selling** actions, but with even greater caution and precision than GD4.
+
+#### **Buy Action**
+- **Purpose:** Add to the position in rare scenarios where the market provides exceptional opportunities.
+- **Buy Amount Calculation:**
+  - The base slice amount (`slice_amount`) is multiplied by the GD5-specific stake multiplier.
+  - Adjusted for leverage in futures mode.
+  - The calculated buy amount:
+    - Must exceed the minimum stake threshold.
+    - Must remain well below the maximum allowable stake, ensuring no excessive exposure.
+- **Market Indicators for Entry:**
+  - GD5 evaluates a combination of advanced market signals:
+    - **RSI Divergence:** Strong divergence between price action and RSI is required.
+    - **EMA Alignment:** The price must be near or bouncing off critical long-term EMA levels.
+    - **Volatility Analysis:** Low volatility conditions combined with clear directional trends.
+- **Logging and Tagging:** The action is tagged as `gd5` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit part or all of the position when GD5 profit thresholds are reached, prioritizing risk reduction.
+- **Sell Amount Calculation:**
+  - Determined based on the GD5-specific position size, adjusted for leverage.
+  - Ensures the remaining stake does not drop below the minimum threshold.
+- **Profit Thresholds:**
+  - GD5 has stricter profit thresholds than GD4, ensuring only significant gains trigger exits.
+  - Fees (`fee_open_rate` and `fee_close_rate`) are included to guarantee net profitability.
+- **Logging and Tagging:** Logs the sell action and tags the order as `gd5`.
+
+---
+
+### **3. Differences Specific to GD5**
+- **Extreme Selectivity:**
+  - GD5 has the most restrictive entry conditions among the grinding levels so far.
+  - Adjustments are rare and only occur in highly favorable scenarios.
+- **Smaller Adjustments:**
+  - The GD5 stake multiplier is significantly lower than earlier levels, reflecting the need for minimal risk at this stage.
+- **Few Sub-Grinds:**
+  - GD5 supports only a minimal number of sub-grinds, ensuring limited re-entry opportunities.
+
+---
+
+### **4. Risk Mitigation in GD5**
+- **De-Risking Priority:**
+  - GD5 focuses heavily on reducing exposure, especially in uncertain or volatile markets.
+  - De-risking takes precedence over seeking new opportunities.
+- **Capital Preservation:**
+  - Ensures that the strategy minimizes potential losses while securing profits from earlier grinding levels.
+- **Minimum Stake Enforcement:**
+  - Maintains a manageable position size, preventing over-leveraging or overexposure.
+
+---
+
+### **5. GD5 as a Capital Preservation Stage**
+GD5 represents the **penultimate step** in the grinding strategy:
+- It prioritizes **precision** and **risk aversion**, ensuring only the best opportunities are acted upon.
+- It serves as a preparatory phase for GD6, which adopts the strictest conditions for trade adjustments.
+
+---
+
+### Summary
+GD5 is a **highly selective and risk-averse stage** in the grinding process, emphasizing **capital preservation**, **strategic de-risking**, and **precision adjustments**. Its strict thresholds and conservative approach ensure that trades remain resilient in volatile market conditions.
+
+### Explanation of Grinding Levels: GD6 (Grinding Level 6)
+
+**Grinding Level 6 (GD6)** is the final and most conservative level in the grinding strategy. It is designed to make adjustments only under the most extreme and favorable conditions, with an emphasis on **capital protection**, **de-risking**, and **closing out positions** if profitability targets or safety thresholds are met. GD6 serves as the ultimate safety net in the grinding process.
+
+---
+
+### **1. Conditions for GD6 Activation**
+GD6 activation occurs only when:
+- **Distance Ratio Thresholds:**
+  - The price distance from the last entry must satisfy the most restrictive threshold in the grinding strategy.
+  - These thresholds are calibrated to ensure GD6 operates only in exceptional scenarios.
+- **Timing Constraints:**
+  - GD6 enforces the longest cooldown periods between trades, often requiring multiple hours or significant market movements since the last adjustment.
+- **Market Signals:**
+  - Requires the strongest confirmations from grind-specific and broader market indicators, including:
+    - RSI, Aroon, EMA, and volume trends.
+    - Potential confluence with higher timeframe support/resistance levels.
+    - Indicators of market exhaustion or reversal.
+- **Mode Sensitivity:**
+  - GD6 is heavily oriented towards **de-risk mode** and **recovery mode**, with grind mode having a minimal role.
+  - The focus is on **exiting the position safely** rather than seeking additional opportunities.
+
+---
+
+### **2. Actions Taken in GD6**
+GD6 supports both **buying** and **selling**, but its operations are highly restrictive and focused on capital preservation.
+
+#### **Buy Action**
+- **Purpose:** Make minimal additions to the position only if market conditions are extraordinarily favorable.
+- **Buy Amount Calculation:**
+  - Uses the base slice amount (`slice_amount`) multiplied by the GD6-specific stake multiplier, which is the smallest across all grinding levels.
+  - Adjusted for leverage in futures mode.
+  - Ensures the buy amount:
+    - Exceeds the minimum stake requirement.
+    - Remains well below the maximum allowable stake, maintaining a conservative position.
+- **Market Indicators for Entry:**
+  - Requires extreme oversold conditions or other significant indicators of market reversal.
+  - Indicators must align across multiple timeframes to ensure robust entry signals.
+- **Logging and Tagging:** Tags the action as `gd6` for tracking and analysis.
+
+#### **Sell Action**
+- **Purpose:** Exit the position entirely or partially when GD6 profit thresholds or safety conditions are met.
+- **Sell Amount Calculation:**
+  - Calculated based on the total GD6-specific position size and adjusted for leverage.
+  - Ensures that any remaining stake meets the minimum threshold if the position is not entirely closed.
+- **Profit Thresholds:**
+  - GD6 has the strictest profit thresholds, requiring significant gains before executing a sell.
+  - Fees (`fee_open_rate` and `fee_close_rate`) are accounted for, ensuring only net profitability triggers an exit.
+- **Logging and Tagging:** Logs the action and tags the order as `gd6`.
+
+---
+
+### **3. Differences Specific to GD6**
+- **Maximum Selectivity:**
+  - GD6 operates with the most restrictive conditions, making adjustments only in scenarios of extreme confidence.
+- **Minimal Adjustments:**
+  - The GD6 stake multiplier is the smallest, reflecting the need for absolute risk control.
+- **Single Sub-Grind:** GD6 typically allows only one or very few sub-grinds, minimizing re-entry opportunities.
+
+---
+
+### **4. Risk Mitigation in GD6**
+- **De-Risking as Priority:** 
+  - GD6 focuses almost exclusively on exiting positions safely, reducing exposure to market volatility.
+- **Capital Preservation:**
+  - Ensures that any adjustments prioritize protecting the trader's capital rather than chasing incremental gains.
+- **Minimum Stake Enforcement:**
+  - Maintains a manageable position size, even for the final grinding level.
+
+---
+
+### **5. GD6 as a Final Safety Stage**
+GD6 represents the **last line of defense** in the grinding strategy:
+- It avoids aggressive adjustments, focusing solely on **safe exits** or minimal re-entries in highly favorable conditions.
+- It serves as the strategy's "endgame," ensuring trades are closed with maximum safety and profitability.
+
+---
+
+### Summary
+GD6 is the **most conservative and risk-averse stage** in the grinding strategy. It focuses on **capital protection**, **strategic exits**, and **minimal adjustments** to ensure the safety of the trader's capital. This level is used sparingly and only in the most exceptional market conditions.
+
+### Summary of Grinding Levels (GD1–GD6)
+
+The **Grinding Levels** (GD1–GD6) in the strategy represent a structured approach to dynamically adjusting trade positions based on market conditions. Each level progressively tightens its conditions and priorities, transitioning from opportunistic profit-seeking (GD1) to maximum capital preservation (GD6).
+
+---
+
+### **GD1: Initial Opportunity Level**
+- **Purpose:** 
+  - Take advantage of early opportunities in a grinding phase.
+- **Key Features:**
+  - Lenient thresholds for rebuys and adjustments.
+  - Larger stake multipliers to capitalize on early favorable market conditions.
+  - Higher frequency of adjustments.
+- **Focus:** Growth-oriented, prioritizing profit opportunities.
+
+---
+
+### **GD2: Refinement Level**
+- **Purpose:** 
+  - Refine trade adjustments by introducing tighter thresholds.
+- **Key Features:**
+  - Slightly stricter distance ratios and profitability requirements.
+  - Reduced stake multipliers to manage risk more cautiously.
+  - Focus on selective opportunities compared to GD1.
+- **Focus:** Balanced between profit-seeking and risk management.
+
+---
+
+### **GD3: Controlled Risk Level**
+- **Purpose:** 
+  - Tighten control over trade adjustments as the grinding phase matures.
+- **Key Features:**
+  - Strict entry and exit criteria.
+  - Further reduced stake multipliers and limited sub-grinds.
+  - Emphasis on aligning adjustments with robust market signals (e.g., RSI, EMA).
+- **Focus:** Shift toward controlled risk and selective profit-taking.
+
+---
+
+### **GD4: Precision Level**
+- **Purpose:** 
+  - Implement precise adjustments under highly favorable market conditions.
+- **Key Features:**
+  - Even stricter thresholds for profitability and distance ratios.
+  - Minimal stake adjustments and fewer sub-grinds allowed.
+  - Heavy reliance on higher timeframe confirmations and confluence.
+- **Focus:** Prioritize capital safety with occasional precision adjustments.
+
+---
+
+### **GD5: Advanced Risk Control**
+- **Purpose:** 
+  - Focus on risk minimization and capital preservation.
+- **Key Features:**
+  - Extremely conservative thresholds and smaller stake multipliers.
+  - Rare adjustments, limited to scenarios of exceptional market alignment.
+  - De-risking takes precedence over profit-seeking.
+- **Focus:** Reduce exposure while preserving existing gains.
+
+---
+
+### **GD6: Final Safety Stage**
+- **Purpose:** 
+  - Provide a last line of defense for the trade, focusing on safe exits.
+- **Key Features:**
+  - The strictest conditions and the smallest stake multipliers.
+  - Minimal adjustments; primarily used for closing out positions.
+  - Heavy focus on capital preservation and avoiding overexposure.
+- **Focus:** Strategic exits and maximum safety.
+
+---
+
+### **Key Progression Across Levels**
+- **Risk Tolerance:** Decreases progressively from GD1 to GD6.
+- **Profit Thresholds:** Tighten at each level, requiring greater confidence in profitability.
+- **Stake Multipliers:** Reduce with each level to limit risk exposure.
+- **Frequency of Adjustments:** Drops significantly, with GD6 allowing the fewest adjustments.
+- **Focus Transition:**
+  - **GD1–GD3:** Balance between profit-seeking and risk management.
+  - **GD4–GD6:** Heavy emphasis on risk control and capital preservation.
+
+---
+
+### **How GD Levels Work Together**
+- **Layered Strategy:** The grinding levels create a multi-layered approach that adapts to market conditions dynamically.
+- **Early Aggression, Later Precision:** Early levels (GD1–GD3) exploit opportunities, while later levels (GD4–GD6) focus on safety and strategic exits.
+- **Flexible Adjustments:** Each level responds to market changes based on predefined thresholds, ensuring the strategy remains adaptive.
+
+
 
 ## Rebuy Mode<a name="rebuy"></a>
 
