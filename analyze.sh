@@ -5,17 +5,21 @@ ANALYSIS_GROUPS="0 1 2 3 4 5"
 
 list_backtests() {
   echo "Available backtest results:"
-  find "$BACKTESTS_DIR" -type f -name '*.json' \
+
+  # Store the list of files in an array, sorted by modification time
+  mapfile -t files < <(find "$BACKTESTS_DIR" -type f -name '*.json' \
          -not -name '*meta.json' \
-         -not -name '.*.json' | nl
+         -not -name '.*.json' -print0 | xargs -0 ls -t)
+
+  # Print the files with numbers
+  for i in "${!files[@]}"; do
+    printf "%d. %s\n" "$((i + 1))" "${files[i]}"
+  done
 }
 
 select_backtest() {
   echo "Select a backtest file by number:"
   list_backtests
-
-  # Store the list of files in an array, excluding *.meta.json files
-  mapfile -t files < <(find "$BACKTESTS_DIR" -type f -name "*.json" ! -name "*.meta.json")
 
   read -rp "Enter the number of the file to analyze: " choice
 
